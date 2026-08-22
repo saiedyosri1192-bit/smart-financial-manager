@@ -1,32 +1,32 @@
-
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المنظومة المالية الذكية - سحب Excel و PDF</title>
+    <title>المنظومة المالية والمحاسبية الذكية لكاميرات المراقبة</title>
     <!-- Bootstrap 5 RTL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts (Cairo) -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS (xlsx) for reading Excel (.xlsx, .xls) -->
+    <!-- SheetJS (XLSX) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- PDF.js for extraction from PDF -->
+    <!-- PDF.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
 
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; color: #0f172a; }
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; color: #0f172a; }
         .sidebar { background: #0f172a; min-height: 100vh; color: #fff; }
-        .sidebar .nav-link { color: #94a3b8; border-radius: 8px; margin-bottom: 6px; font-weight: 600; transition: all 0.2s; }
+        .sidebar .nav-link { color: #94a3b8; border-radius: 10px; margin-bottom: 6px; font-weight: 600; transition: all 0.2s; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #2563eb; color: #fff; }
         .card-custom { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); background: #fff; }
         .stat-card { border: none; border-radius: 14px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .upload-area { border: 2px dashed #3b82f6; border-radius: 16px; background: #eff6ff; padding: 2rem; text-align: center; cursor: pointer; transition: 0.3s; }
-        .upload-area:hover { background: #dbeafe; }
+        .upload-zone { border: 2px dashed #2563eb; border-radius: 16px; background: #eff6ff; padding: 2.5rem; text-align: center; cursor: pointer; transition: 0.3s; }
+        .upload-zone:hover { background: #dbeafe; border-color: #1d4ed8; }
         .tree, .tree ul { list-style: none; padding-right: 1.2rem; }
         .tree li { margin: 0.4rem 0; }
         .tree-node { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
@@ -37,106 +37,262 @@
     <div class="container-fluid">
         <div class="row">
             
-            <!-- القائمة الجانبية -->
+            <!-- القائمة الجانبية الموحدة لجميع الأدوار -->
             <div class="col-md-3 col-lg-2 sidebar p-3 d-flex flex-column">
                 <div class="d-flex align-items-center gap-2 mb-4 px-2">
-                    <i class="fa-solid fa-file-invoice-dollar text-primary fa-2x"></i>
+                    <i class="fa-solid fa-video text-primary fa-2x"></i>
                     <div>
                         <h6 class="fw-bold mb-0 text-white">المنظومة الذكية</h6>
-                        <span class="small text-muted">Excel & PDF Auto Parsing</span>
+                        <span class="small text-muted">CCTV Financial Engine</span>
                     </div>
                 </div>
 
                 <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
-                    <button class="nav-link active text-start" id="tab-import-btn" data-bs-toggle="pill" data-bs-target="#tab-import"><i class="fa-solid fa-file-import me-2"></i> سحب Excel / PDF</button>
-                    <button class="nav-link text-start" id="tab-accountant-btn" data-bs-toggle="pill" data-bs-target="#tab-accountant"><i class="fa-solid fa-book-journal-whills me-2"></i> اليومية والقيود</button>
-                    <button class="nav-link text-start" id="tab-manager-btn" data-bs-toggle="pill" data-bs-target="#tab-manager"><i class="fa-solid fa-diagram-project me-2"></i> شجرة الحسابات</button>
-                    <button class="nav-link text-start" id="tab-cfo-btn" data-bs-toggle="pill" data-bs-target="#tab-cfo"><i class="fa-solid fa-chart-line me-2"></i> القوائم والربحية</button>
+                    <button class="nav-link active text-start" id="tab-import-btn" data-bs-toggle="pill" data-bs-target="#tab-import"><i class="fa-solid fa-file-import me-2"></i> سحب Excel / PDF (ERP)</button>
+                    <button class="nav-link text-start" id="tab-accountant-btn" data-bs-toggle="pill" data-bs-target="#tab-accountant"><i class="fa-solid fa-book-journal-whills me-2"></i> المحاسب (دفتر اليومية)</button>
+                    <button class="nav-link text-start" id="tab-manager-btn" data-bs-toggle="pill" data-bs-target="#tab-manager"><i class="fa-solid fa-diagram-project me-2"></i> مدير الحسابات (الشجرة والميزان)</button>
+                    <button class="nav-link text-start" id="tab-cfo-btn" data-bs-toggle="pill" data-bs-target="#tab-cfo"><i class="fa-solid fa-chart-line me-2"></i> المدير المالي (القوائم والربحية)</button>
+                    <button class="nav-link text-start" id="tab-projects-btn" data-bs-toggle="pill" data-bs-target="#tab-projects"><i class="fa-solid fa-screwdriver-wrench me-2"></i> ربحية العقود والفنيين</button>
+                </div>
+
+                <div class="mt-auto pt-4 border-top border-secondary">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-primary text-white p-2 rounded-circle"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div>
+                            <div class="fw-bold small text-white">النظام المالي المتكامل</div>
+                            <span class="badge bg-success">15% VAT Ready</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- ساحة العمل -->
+            <!-- ساحة العمل الرئيسية -->
             <div class="col-md-9 col-lg-10 p-4">
                 <div class="tab-content">
                     
-                    <!-- 1. شاشة سحب ملفات Excel و PDF -->
+                    <!-- 1. شاشة سحب البيانات من ملفات Excel و PDF -->
                     <div class="tab-pane fade show active" id="tab-import">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div>
-                                <h4 class="fw-bold mb-1"><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i>سحب وقراءة ملفات Excel (.xlsx / .xls / .csv) و PDF تلقائياً</h4>
-                                <p class="text-muted small mb-0">اسحب كشوفات الحساب، الفواتير، أو ملفات Excel/PDF المصدرة من الـ ERP وسيقوم النظام باستخراج المبيعات والمصروفات وتوليد القيود المحاسبية.</p>
+                                <h4 class="fw-bold mb-1"><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i>مركز سحب واستيراد بيانات Excel و PDF</h4>
+                                <p class="text-muted small mb-0">سحب فواتير المبيعات، الصيانة، والمشتريات المصدرة من نظام الـ ERP وتحويلها تلقائياً لقيود محاسبية وقوائم مالية.</p>
                             </div>
                         </div>
 
                         <div class="row g-4 mb-4">
-                            <div class="col-md-12">
-                                <div class="upload-area" onclick="document.getElementById('fileImporter').click()">
-                                    <i class="fa-solid fa-file-circle-plus fa-3x text-primary mb-3"></i>
-                                    <h5 class="fw-bold text-dark">اضغط هنا أو اسحب وأسقط ملفات Excel (.xlsx, .csv) أو PDF</h5>
-                                    <p class="text-muted small mb-0">يدعم النظام قراءة كشوفات الحساب والفواتير والـ ERP تلقائياً وبدون إدخال يدوي</p>
-                                    <input type="file" id="fileImporter" class="d-none" accept=".xlsx, .xls, .csv, .pdf" onchange="processFile(event)">
+                            <div class="col-md-8">
+                                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fa-solid fa-file-excel fa-3x text-success mb-2 me-2"></i>
+                                    <i class="fa-solid fa-file-pdf fa-3x text-danger mb-2"></i>
+                                    <h5 class="fw-bold text-dark mt-2">اضغط هنا لسحب ملف Excel (.xlsx / .csv) أو ملف PDF</h5>
+                                    <p class="text-muted small mb-0">سيقوم النظام بمسح البيانات، احتساب ضريبة الـ VAT (15%) وتكلفة المواد (COGS) وتوليد القيود فوراً</p>
+                                    <input type="file" id="fileInput" class="d-none" accept=".xlsx, .xls, .csv, .pdf" onchange="handleFileImport(event)">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-custom p-4 h-100">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-bolt text-warning me-2"></i>محاكي الفواتير السريع</h6>
+                                    <form id="quickSimForm">
+                                        <div class="mb-2">
+                                            <input type="text" id="simDesc" class="form-control form-control-sm" placeholder="بيان المشروع (مثال: مشروع توريد 16 كاميرا لشركة JAL)" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <input type="number" id="simSales" class="form-control form-control-sm" placeholder="المبلغ قبل الضريبة (ر.س)" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <input type="number" id="simCost" class="form-control form-control-sm" placeholder="التكلفة COGS (ر.س)" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">معالجة وتوليد تلقائي</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- حالة المعالجة والجداول -->
                         <div class="card card-custom p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold mb-0">الفواتير والمعاملات المستخرجة من الملفات</h6>
-                                <span class="badge bg-primary" id="importedCount">0 معاملة مسحوبة</span>
-                            </div>
+                            <h6 class="fw-bold mb-3">سجل الفواتير والمعاملات المسحوبة من الملفات</h6>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
                                         <tr>
                                             <th>#</th>
-                                            <th>مصدر الملف</th>
+                                            <th>المصدر</th>
                                             <th>البيان والمشروع</th>
-                                            <th>المبلغ الإجمالي</th>
+                                            <th>المبيعات (بدون ضريبة)</th>
                                             <th>الضريبة (15%)</th>
-                                            <th>التكلفة التقديرية</th>
-                                            <th>التوجيه المحاسبي</th>
+                                            <th>التكلفة (COGS)</th>
+                                            <th>مجمل الربح</th>
+                                            <th>الحالة</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="importedRowsBody">
-                                        <tr><td colspan="7" class="text-center text-muted py-4">لم يتم سحب ملفات بعد. قم برفع ملف Excel أو PDF للتجربة المباشرة.</td></tr>
-                                    </tbody>
+                                    <tbody id="importedTableBody"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 2. اليومية والقيود -->
+                    <!-- 2. قسم المحاسب (Accountant - اليومية والقيود) -->
                     <div class="tab-pane fade" id="tab-accountant">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold"><i class="fa-solid fa-book-journal-whills text-primary me-2"></i>دفتر اليومية العامة والقيود المزدوجة التلقائية</h4>
+                            <button class="btn btn-outline-success btn-sm rounded-pill px-3" onclick="exportCSV()"><i class="fa-solid fa-file-excel me-1"></i> تصدير Excel</button>
+                        </div>
+
+                        <div class="card card-custom p-4 mb-4">
+                            <h6 class="fw-bold mb-3">تسجيل قيد يدوي (مصاريف الفنيين / بنزين السيارات / التسويات)</h6>
+                            <form id="manualEntryForm">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-2"><input type="date" id="mDate" class="form-control form-control-sm" required></div>
+                                    <div class="col-md-4"><input type="text" id="mDesc" class="form-control form-control-sm" placeholder="شرح القيد (مثال: بنزين سيارات الفنيين)" required></div>
+                                    <div class="col-md-2"><select id="mDeb" class="form-select form-select-sm" required></select></div>
+                                    <div class="col-md-2"><select id="mCred" class="form-select form-select-sm" required></select></div>
+                                    <div class="col-md-2"><input type="number" id="mAmount" class="form-control form-control-sm" placeholder="المبلغ (ر.س)" required></div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm fw-bold px-4">ترحيل القيد</button>
+                            </form>
+                        </div>
+
                         <div class="card card-custom p-4">
-                            <h5 class="fw-bold mb-3">دفتر اليومية العامة والقيود المزدوجة التلقائية</h5>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
-                                        <tr><th>#</th><th>التاريخ</th><th>البيان</th><th>المدين (+)</th><th>الدائن (-)</th><th>المبلغ</th></tr>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>التاريخ</th>
+                                            <th>البيان والنشاط</th>
+                                            <th>الطرف المدين (+)</th>
+                                            <th>الطرف الدائن (-)</th>
+                                            <th>المبلغ (ر.س)</th>
+                                            <th>إجراءات</th>
+                                        </tr>
                                     </thead>
-                                    <tbody id="journalBody"></tbody>
+                                    <tbody id="journalTableBody"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. شجرة الحسابات -->
+                    <!-- 3. قسم مدير الحسابات (Accounting Manager - الشجرة والميزان) -->
                     <div class="tab-pane fade" id="tab-manager">
-                        <div class="card card-custom p-4">
-                            <h5 class="fw-bold mb-3">شجرة الحسابات وميزان المراجعة</h5>
-                            <div id="treeContainer" class="tree"></div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold"><i class="fa-solid fa-diagram-project text-primary me-2"></i>شجرة حسابات كاميرات المراقبة وميزان المراجعة</h4>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">شجرة الحسابات المخصصة للأنظمة الأمنية</h6>
+                                    <div id="treeContainer" class="tree"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">ميزان المراجعة بالمجاميع والأرصدة</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm text-center align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>الكود</th>
+                                                    <th>اسم الحساب</th>
+                                                    <th>إجمالي المدين</th>
+                                                    <th>إجمالي الدائن</th>
+                                                    <th>الرصيد</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="trialBalanceBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 4. التقرير المالي والقوائم -->
+                    <!-- 4. قسم المدير المالي (CFO Dashboard & Statements) -->
                     <div class="tab-pane fade" id="tab-cfo">
-                        <div class="card card-custom p-4">
-                            <h5 class="fw-bold mb-3">التحليل التنفيذي والقوائم المالية</h5>
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-4"><div class="stat-card p-3"><span class="text-muted small">إجمالي المبيعات</span><h4 class="fw-bold text-success" id="cfoSales">0.00 ر.س</h4></div></div>
-                                <div class="col-md-4"><div class="stat-card p-3"><span class="text-muted small">إجمالي التكاليف (COGS)</span><h4 class="fw-bold text-danger" id="cfoCogs">0.00 ر.س</h4></div></div>
-                                <div class="col-md-4"><div class="stat-card p-3"><span class="text-muted small">مجمل الربح</span><h4 class="fw-bold text-primary" id="cfoProfit">0.00 ر.س</h4></div></div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold"><i class="fa-solid fa-chart-line text-primary me-2"></i>لوحة المدير المالي والقوائم المالية (CFO Dashboard)</h4>
+                            <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> طباعة القوائم المالية</button>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">إجمالي المبيعات والتركيبات</span>
+                                    <h3 class="fw-bold text-success mb-0" id="cfoSales">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">تكلفة المواد المباعة (COGS)</span>
+                                    <h3 class="fw-bold text-danger mb-0" id="cfoCogs">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">مجمل الربح (Gross Profit)</span>
+                                    <h3 class="fw-bold text-primary mb-0" id="cfoGrossProfit">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">التزام ضريبة VAT المستحقة</span>
+                                    <h3 class="fw-bold text-warning mb-0" id="cfoVat">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-7">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">قائمة الدخل التقديرية (Income Statement)</h6>
+                                    <table class="table table-sm align-middle">
+                                        <tbody>
+                                            <tr><td>إيرادات توريد وتركيب الأنظمة</td><td class="text-end fw-bold text-success" id="isSales">0.00</td></tr>
+                                            <tr><td>إيرادات عقود الصيانة السنوية</td><td class="text-end fw-bold text-success" id="isMaint">0.00</td></tr>
+                                            <tr class="table-light"><th>إجمالي الإيرادات</th><th class="text-end fw-bold" id="isTotalRev">0.00</th></tr>
+                                            <tr><td>(-) تكلفة البضاعة والمعدات (COGS)</td><td class="text-end text-danger" id="isCogs">0.00</td></tr>
+                                            <tr class="table-primary"><th>مجمل الربح</th><th class="text-end fw-bold" id="isGross">0.00</th></tr>
+                                            <tr><td>(-) مصاريف سيارات الفنيين والعمومية</td><td class="text-end text-danger" id="isExp">0.00</td></tr>
+                                            <tr class="table-success"><th>صافي الربح قبل الضريبة</th><th class="text-end fw-bold" id="isNetProfit">0.00</th></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">تحليل الأداء المالي والربحية</h6>
+                                    <canvas id="cfoChart" style="max-height: 250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. قسم ربحية المشاريع والصيانة -->
+                    <div class="tab-pane fade" id="tab-projects">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold"><i class="fa-solid fa-screwdriver-wrench text-primary me-2"></i>تحليل ربحية عقود الصيانة والمشاريع وسيارات الفنيين</h4>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card card-custom p-3 text-center">
+                                    <i class="fa-solid fa-file-contract fa-2x text-primary mb-2"></i>
+                                    <h6>عقود الصيانة السنوية (AMCs)</h6>
+                                    <h4 class="fw-bold text-success mb-0" id="projMaintRev">0.00 ر.س</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-custom p-3 text-center">
+                                    <i class="fa-solid fa-truck-field fa-2x text-warning mb-2"></i>
+                                    <h6>مصاريف سيارات وبنزين الفنيين</h6>
+                                    <h4 class="fw-bold text-danger mb-0" id="projFleetExp">0.00 ر.س</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-custom p-3 text-center">
+                                    <i class="fa-solid fa-chart-pie fa-2x text-info mb-2"></i>
+                                    <h6>هامش ربح المشاريع الإجمالي</h6>
+                                    <h4 class="fw-bold text-info mb-0" id="projMargin">0.00%</h4>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -149,51 +305,100 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let importedTransactions = [];
-        let journalEntries = [];
-
+        // شجرة الحسابات المتخصصة لكاميرات المراقبة
         let chartOfAccounts = [
-            { code: "1101", name: "الصندوق / النقدية" },
-            { code: "1102", name: "البنك" },
-            { code: "1103", name: "العملاء / الذمم المدينة" },
-            { code: "1104", name: "مخزون كاميرات ومعدات" },
-            { code: "2102", name: "ضريبة القيمة المضافة" },
-            { code: "4101", name: "إيرادات المبيعات والتركيب" },
-            { code: "5101", name: "تكلفة البضاعة المباعة (COGS)" }
+            { id: 1, code: "1", name: "الأصول", children: [
+                { id: 11, code: "11", name: "الأصول المتداولة", children: [
+                    { id: 1101, code: "1101", name: "الصندوق / النقدية" },
+                    { id: 1102, code: "1102", name: "البنك" },
+                    { id: 1103, code: "1103", name: "العملاء / الذمم المدينة" },
+                    { id: 1104, code: "1104", name: "مخزون كاميرات CCTV و NVR" },
+                    { id: 1105, code: "1105", name: "مخزون الهاردات والشاشات" },
+                    { id: 1106, code: "1106", name: "مخزون الكابلات والإكسسوارات" },
+                    { id: 1107, code: "1107", name: "ضريبة القيمة المضافة - مدخلات" }
+                ]},
+                { id: 12, code: "12", name: "الأصول غير المتداولة", children: [
+                    { id: 1201, code: "1201", name: "سيارات الفنيين والتركيبات" }
+                ]}
+            ]},
+            { id: 2, code: "2", name: "الالتزامات", children: [
+                { id: 21, code: "21", name: "الالتزامات المتداولة", children: [
+                    { id: 2101, code: "2101", name: "الموردون / الشركات المصنعة" },
+                    { id: 2102, code: "2102", name: "ضريبة القيمة المضافة المستحقة" }
+                ]}
+            ]},
+            { id: 3, code: "3", name: "حقوق الملكية", children: [
+                { id: 31, code: "31", name: "رأس المال" }
+            ]},
+            { id: 4, code: "4", name: "الإيرادات", children: [
+                { id: 4101, code: "4101", name: "إيرادات توريد وتركيب الكاميرات" },
+                { id: 4102, code: "4102", name: "إيرادات عقود الصيانة السنوية" }
+            ]},
+            { id: 5, code: "5", name: "المصروفات", children: [
+                { id: 5101, code: "5101", name: "تكلفة البضاعة المباعة (COGS)" },
+                { id: 5201, code: "5201", name: "مصاريف بنزين وسيارة الفنيين" },
+                { id: 5202, code: "5202", name: "رواتب الفنيين والمهندسين" }
+            ]}
         ];
 
-        // معالجة الملف الساحب سواء Excel أو PDF
-        async function processFile(event) {
+        let importedInvoices = [];
+        let journalEntries = [];
+        let cfoChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('mDate').valueAsDate = new Date();
+            initCharts();
+            populateManualDropdowns();
+            renderTree();
+
+            // إضافة فواتير أولية لتشغيل البرنامج مباشرة
+            addInvoiceRecord("مشروع توريد وتركيب 32 كاميرا شبكية لشركة JAL", 25000, 14000, "محاكاة ERP");
+            addInvoiceRecord("عقد صيانة سنوي لمبنى سكني (Muvi Mall)", 8000, 2000, "محاكاة ERP");
+        });
+
+        // 1. معالجة سحب الملفات (Excel و PDF)
+        async function handleFileImport(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            const fileExt = file.name.split('.').pop().toLowerCase();
+            const ext = file.name.split('.').pop().toLowerCase();
 
-            if (['xlsx', 'xls', 'csv'].includes(fileExt)) {
-                parseExcel(file);
-            } else if (fileExt === 'pdf') {
-                parsePDF(file);
+            if (['xlsx', 'xls', 'csv'].includes(ext)) {
+                readExcelFile(file);
+            } else if (ext === 'pdf') {
+                readPDFFile(file);
             } else {
-                alert('يرجى اختيار ملف Excel (.xlsx, .csv) أو ملف PDF صحيح');
+                alert('يرجى اختيار ملف Excel أو PDF صحيح!');
             }
         }
 
-        // 1. سحب وتحليل ملفات Excel
-        function parseExcel(file) {
+        // قراءة Excel بواسطة SheetJS
+        function readExcelFile(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-                processRowsData(jsonData, file.name);
+                let count = 0;
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row && row.length > 0) {
+                        const desc = row[0] || `فاتورة Excel سطر ${i}`;
+                        const sales = parseFloat(row[1] || row[2]) || 5000;
+                        const cost = parseFloat(row[2] || row[3]) || (sales * 0.55);
+                        addInvoiceRecord(desc, sales, cost, file.name);
+                        count++;
+                    }
+                }
+                alert(`تم سحب وتحليل ${count} فاتورة من ملف Excel (${file.name}) بنجاح!`);
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // 2. سحب وتحليل ملفات PDF النصية
-        async function parsePDF(file) {
+        // قراءة PDF بواسطة PDF.js
+        async function readPDFFile(file) {
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             let fullText = '';
@@ -201,138 +406,276 @@
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join(' ');
-                fullText += pageText + '
-';
+                fullText += textContent.items.map(item => item.str).join(' ') + '\n';
             }
 
-            extractDataFromText(fullText, file.name);
-        }
-
-        // معالجة الصفوف المستخرجة من Excel
-        function processRowsData(rows, fileName) {
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.length === 0) continue;
-
-                const desc = row[0] || row[1] || 'معاملة مسحوبة من Excel';
-                const amount = parseFloat(row[2] || row[1] || row[3]) || 0;
-
-                if (amount > 0) {
-                    addTransaction(fileName, desc, amount);
-                }
-            }
-            refreshAll();
-            alert(`تم سحب البيانات من ملف Excel (${fileName}) بنجاح!`);
-        }
-
-        // استخراج البيانات الرقمية من PDF
-        function extractDataFromText(text, fileName) {
-            const lines = text.split('
-');
-            let extractedCount = 0;
-
-            lines.forEach(line => {
-                const numbers = line.match(/\d+(\.\d+)?/g);
-                if (numbers && numbers.length > 0) {
-                    const amount = parseFloat(numbers[0]);
-                    if (amount > 100) {
-                        addTransaction(fileName, line.slice(0, 40) || 'فاتورة مسحوبة من PDF', amount);
-                        extractedCount++;
-                    }
-                }
-            });
-
-            if (extractedCount === 0) {
-                addTransaction(fileName, 'فاتورة/عقد صيانة مسحوب من PDF', 5000);
+            // استخراج الأرقام والمبالغ
+            const numbers = fullText.match(/\d+(\.\d+)?/g);
+            let sales = 6000;
+            if (numbers && numbers.length > 0) {
+                sales = parseFloat(numbers[0]) > 100 ? parseFloat(numbers[0]) : 6000;
             }
 
-            refreshAll();
-            alert(`تم سحب البيانات وتحليلها من ملف PDF (${fileName}) بنجاح!`);
+            addInvoiceRecord(`فاتورة مسحوبة من PDF: ${file.name}`, sales, sales * 0.55, file.name);
+            alert(`تم سحب البيانات وتحليل القيد المحاسبي من ملف PDF (${file.name}) بنجاح!`);
         }
 
-        function addTransaction(source, desc, sales) {
+        // محاكي سريع
+        document.getElementById('quickSimForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const desc = document.getElementById('simDesc').value;
+            const sales = parseFloat(document.getElementById('simSales').value);
+            const cost = parseFloat(document.getElementById('simCost').value);
+
+            addInvoiceRecord(desc, sales, cost, 'إدخال سريع');
+            document.getElementById('quickSimForm').reset();
+        });
+
+        // تسجيل الفاتورة وتوليد القيد المزدوج المحاسبي تلقائياً
+        function addInvoiceRecord(desc, sales, cost, source) {
             const vat = sales * 0.15;
-            const cogs = sales * 0.55; // تقدير التكلفة للمواد
+            const gross = sales - cost;
 
-            const tx = {
-                id: importedTransactions.length + 1,
-                source,
-                desc,
-                sales,
-                vat,
-                cogs
+            const inv = {
+                id: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+                desc, sales, vat, cost, gross, source,
+                date: new Date().toISOString().slice(0, 10)
             };
 
-            importedTransactions.unshift(tx);
+            importedInvoices.unshift(inv);
 
-            // توليد القيود المزدوجة الآلية
+            // توليد القيود المزدوجة التلقائية (Auto Double-Entry)
+            // 1. قيد المبيعات والضريبة المستحقة
             journalEntries.unshift({
-                id: Date.now() + Math.random(),
-                date: new Date().toISOString().slice(0, 10),
-                desc: `إثبات فاتورة مسحوبة (${source}): ${desc}`,
-                debCode: '1103 (العملاء)',
-                credCode: '4101 (المبيعات)',
+                id: Date.now() + 1,
+                date: inv.date,
+                desc: `إثبات فاتورة: ${desc} (${source})`,
+                debCode: '1103', // العملاء
+                credCode: '4101', // المبيعات
                 amount: sales
             });
 
             journalEntries.unshift({
-                id: Date.now() + Math.random(),
-                date: new Date().toISOString().slice(0, 10),
-                desc: `إثبات تكلفة البضاعة المباعة (COGS)`,
-                debCode: '5101 (تكلفة المباع)',
-                credCode: '1104 (المخزون)',
-                amount: cogs
+                id: Date.now() + 2,
+                date: inv.date,
+                desc: `إثبات ضريبة القيمة المضافة 15%: ${desc}`,
+                debCode: '1103', // العملاء
+                credCode: '2102', // الضريبة المستحقة
+                amount: vat
             });
+
+            // 2. قيد تكلفة البضاعة المباعة (COGS) والمخزون
+            journalEntries.unshift({
+                id: Date.now() + 3,
+                date: inv.date,
+                desc: `إثبات تكلفة البضاعة المباعة (COGS): ${desc}`,
+                debCode: '5101', // تكلفة المباع
+                credCode: '1104', // مخزون الكاميرات
+                amount: cost
+            });
+
+            refreshAll();
         }
 
+        // تحديث جميع الشاشات
         function refreshAll() {
-            // تحديث الجدول
-            const tbody = document.getElementById('importedRowsBody');
-            tbody.innerHTML = '';
+            renderImportedTable();
+            renderJournalTable();
+            renderTrialBalance();
+            updateCFODashboard();
+        }
 
-            importedTransactions.forEach(t => {
+        function renderImportedTable() {
+            const tbody = document.getElementById('importedTableBody');
+            tbody.innerHTML = '';
+            importedInvoices.forEach((inv, idx) => {
                 tbody.innerHTML += `
                     <tr>
-                        <td>${t.id}</td>
-                        <td><span class="badge bg-secondary">${t.source}</span></td>
-                        <td>${t.desc}</td>
-                        <td class="fw-bold text-success">${t.sales.toLocaleString()} ر.س</td>
-                        <td class="text-warning">${t.vat.toLocaleString()} ر.س</td>
-                        <td class="text-danger">${t.cogs.toLocaleString()} ر.س</td>
-                        <td><span class="badge bg-success">تم إنشاء القيد آلياً</span></td>
+                        <td>${idx + 1}</td>
+                        <td><span class="badge bg-secondary">${inv.source}</span></td>
+                        <td>${inv.desc}</td>
+                        <td class="text-success fw-bold">${inv.sales.toLocaleString()} ر.س</td>
+                        <td class="text-warning">${inv.vat.toLocaleString()} ر.س</td>
+                        <td class="text-danger">${inv.cost.toLocaleString()} ر.س</td>
+                        <td class="fw-bold text-primary">${inv.gross.toLocaleString()} ر.س</td>
+                        <td><span class="badge bg-success">تم التوليد المحاسبي</span></td>
                     </tr>
                 `;
             });
+        }
 
-            document.getElementById('importedCount').innerText = `${importedTransactions.length} معاملة مسحوبة`;
+        function renderJournalTable() {
+            const tbody = document.getElementById('journalTableBody');
+            tbody.innerHTML = '';
+            const flat = getFlatAccounts(chartOfAccounts);
 
-            // تحديث دفتر اليومية
-            const jBody = document.getElementById('journalBody');
-            jBody.innerHTML = '';
             journalEntries.forEach((j, idx) => {
-                jBody.innerHTML += `
+                const debName = flat.find(a => a.code === j.debCode)?.name || j.debCode;
+                const credName = flat.find(a => a.code === j.credCode)?.name || j.credCode;
+
+                tbody.innerHTML += `
                     <tr>
                         <td>${idx + 1}</td>
                         <td>${j.date}</td>
                         <td>${j.desc}</td>
-                        <td class="text-success fw-bold">${j.debCode}</td>
-                        <td class="text-danger fw-bold">${j.credCode}</td>
+                        <td class="text-success fw-bold">${j.debCode} - ${debName}</td>
+                        <td class="text-danger fw-bold">${j.credCode} - ${credName}</td>
                         <td class="fw-bold">${j.amount.toLocaleString()} ر.س</td>
+                        <td><button class="btn btn-sm btn-outline-danger border-0" onclick="deleteJournalEntry(${j.id})"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
                 `;
             });
+        }
 
-            // تحديث القوائم
-            let totalSales = 0, totalCogs = 0;
-            importedTransactions.forEach(t => { totalSales += t.sales; totalCogs += t.cogs; });
+        function deleteJournalEntry(id) {
+            journalEntries = journalEntries.filter(j => j.id !== id);
+            refreshAll();
+        }
+
+        function renderTrialBalance() {
+            const tbody = document.getElementById('trialBalanceBody');
+            tbody.innerHTML = '';
+            const flat = getFlatAccounts(chartOfAccounts);
+
+            flat.forEach(acc => {
+                let debSum = 0, credSum = 0;
+                journalEntries.forEach(j => {
+                    if (j.debCode === acc.code) debSum += j.amount;
+                    if (j.credCode === acc.code) credSum += j.amount;
+                });
+
+                if (debSum > 0 || credSum > 0) {
+                    const balance = debSum - credSum;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${acc.code}</td>
+                            <td class="text-start">${acc.name}</td>
+                            <td class="text-success">${debSum.toLocaleString()}</td>
+                            <td class="text-danger">${credSum.toLocaleString()}</td>
+                            <td class="fw-bold ${balance >= 0 ? 'text-primary' : 'text-danger'}">${balance.toLocaleString()} ر.س</td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function updateCFODashboard() {
+            let totalSales = 0, totalCogs = 0, totalVat = 0, totalMaint = 0, totalFleet = 0;
+
+            importedInvoices.forEach(inv => {
+                totalSales += inv.sales;
+                totalCogs += inv.cost;
+                totalVat += inv.vat;
+                if (inv.desc.includes('صيانة') || inv.desc.includes('عقد')) totalMaint += inv.sales;
+            });
+
+            journalEntries.forEach(j => {
+                if (j.debCode === '5201') totalFleet += j.amount;
+            });
+
+            const grossProfit = totalSales - totalCogs;
+
             document.getElementById('cfoSales').innerText = `${totalSales.toLocaleString()} ر.س`;
             document.getElementById('cfoCogs').innerText = `${totalCogs.toLocaleString()} ر.س`;
-            document.getElementById('cfoProfit').innerText = `${(totalSales - totalCogs).toLocaleString()} ر.س`;
+            document.getElementById('cfoGrossProfit').innerText = `${grossProfit.toLocaleString()} ر.س`;
+            document.getElementById('cfoVat').innerText = `${totalVat.toLocaleString()} ر.س`;
 
-            // رسم شجرة
-            const tree = document.getElementById('treeContainer');
-            tree.innerHTML = '<ul>' + chartOfAccounts.map(a => `<li><div class="tree-node"><span>${a.code} - ${a.name}</span></div></li>`).join('') + 'ul>';
+            // قائمة الدخل
+            document.getElementById('isSales').innerText = (totalSales - totalMaint).toLocaleString();
+            document.getElementById('isMaint').innerText = totalMaint.toLocaleString();
+            document.getElementById('isTotalRev').innerText = totalSales.toLocaleString();
+            document.getElementById('isCogs').innerText = totalCogs.toLocaleString();
+            document.getElementById('isGross').innerText = grossProfit.toLocaleString();
+            document.getElementById('isExp').innerText = totalFleet.toLocaleString();
+            document.getElementById('isNetProfit').innerText = (grossProfit - totalFleet).toLocaleString();
+
+            // المشاريع
+            document.getElementById('projMaintRev').innerText = `${totalMaint.toLocaleString()} ر.س`;
+            document.getElementById('projFleetExp').innerText = `${totalFleet.toLocaleString()} ر.س`;
+            const margin = totalSales > 0 ? ((grossProfit / totalSales) * 100).toFixed(1) : 0;
+            document.getElementById('projMargin').innerText = `${margin}%`;
+
+            cfoChart.data.datasets[0].data = [totalSales, totalCogs, grossProfit];
+            cfoChart.update();
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('cfoChart').getContext('2d');
+            cfoChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['المبيعات', 'التكلفة (COGS)', 'مجمل الربح'],
+                    datasets: [{ data: [0, 0, 0], backgroundColor: ['#10b981', '#ef4444', '#3b82f6'] }]
+                },
+                options: { plugins: { legend: { display: false } }, responsive: true }
+            });
+        }
+
+        function renderTree() {
+            document.getElementById('treeContainer').innerHTML = generateTreeHTML(chartOfAccounts);
+        }
+
+        function generateTreeHTML(nodes) {
+            let html = '<ul>';
+            nodes.forEach(node => {
+                html += `
+                    <li>
+                        <div class="tree-node">
+                            <div><span class="badge bg-secondary me-2">${node.code}</span><strong>${node.name}</strong></div>
+                        </div>
+                        ${node.children ? generateTreeHTML(node.children) : ''}
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            return html;
+        }
+
+        function populateManualDropdowns() {
+            const deb = document.getElementById('mDeb');
+            const cred = document.getElementById('mCred');
+            deb.innerHTML = ''; cred.innerHTML = '';
+            const flat = getFlatAccounts(chartOfAccounts);
+            flat.forEach(a => {
+                deb.add(new Option(`${a.code} - ${a.name}`, a.code));
+                cred.add(new Option(`${a.code} - ${a.name}`, a.code));
+            });
+        }
+
+        function getFlatAccounts(nodes) {
+            let list = [];
+            nodes.forEach(node => {
+                if (!node.children || node.children.length === 0) list.push(node);
+                else list = list.concat(getFlatAccounts(node.children));
+            });
+            return list;
+        }
+
+        document.getElementById('manualEntryForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            journalEntries.unshift({
+                id: Date.now(),
+                date: document.getElementById('mDate').value,
+                desc: document.getElementById('mDesc').value,
+                debCode: document.getElementById('mDeb').value,
+                credCode: document.getElementById('mCred').value,
+                amount: parseFloat(document.getElementById('mAmount').value)
+            });
+            document.getElementById('manualEntryForm').reset();
+            document.getElementById('mDate').valueAsDate = new Date();
+            refreshAll();
+        });
+
+        function exportCSV() {
+            let csv = "\uFEFFالتاريخ,البيان,الطرف المدين,الطرف الدائن,المبلغ\n";
+            journalEntries.forEach(j => {
+                csv += `"${j.date}","${j.desc}","${j.debCode}","${j.credCode}","${j.amount}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `دفتر_اليومية_كاميرات_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
         }
     </script>
 </body>

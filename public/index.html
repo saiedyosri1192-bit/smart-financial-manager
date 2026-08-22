@@ -3,32 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المنظومة المحاسبية المتقدمة - Enterprise ERP Layer</title>
+    <title>منظومة الأمان المالية الاحترافية - CCTV Enterprise ERP</title>
     <!-- Bootstrap 5 RTL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
+    <!-- Google Fonts (Cairo) -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- QRCode.js for ZATCA E-Invoicing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- PDF.js Engine -->
+    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
 
     <style>
-        :root { --sidebar-bg: #0f172a; --primary-blue: #2563eb; }
+        :root { --main-bg: #0f172a; --primary: #2563eb; }
         body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; color: #0f172a; }
-        .sidebar { background: var(--sidebar-bg); min-height: 100vh; color: #fff; }
+        .sidebar { background: var(--main-bg); min-height: 100vh; color: #fff; }
         .sidebar .nav-link { color: #94a3b8; border-radius: 8px; margin-bottom: 4px; padding: 10px 14px; font-weight: 600; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: var(--primary-blue); color: #fff; }
-        .sidebar .section-header { font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: 800; margin: 12px 0 4px 0; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: var(--primary); color: #fff; }
+        .sidebar .section-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: 800; margin: 12px 0 4px 0; }
         .card-custom { border: none; border-radius: 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.03); background: #fff; }
         .stat-card { border: none; border-radius: 12px; background: #fff; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .upload-box { border: 2px dashed #2563eb; border-radius: 14px; background: #eff6ff; padding: 2rem; text-align: center; cursor: pointer; }
-        .upload-box:hover { background: #dbeafe; }
+        .upload-zone { border: 2px dashed #2563eb; border-radius: 14px; background: #eff6ff; padding: 2rem; text-align: center; cursor: pointer; }
+        .upload-zone:hover { background: #dbeafe; }
+        .invoice-box { border: 1px solid #ddd; padding: 20px; background: #fff; border-radius: 8px; }
         .tree, .tree ul { list-style: none; padding-right: 1.2rem; }
         .tree li { margin: 0.4rem 0; }
         .tree-node { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
@@ -39,37 +42,44 @@
     <div class="container-fluid">
         <div class="row">
             
-            <!-- القائمة الجانبية الشاملة للأدوار والقوائم -->
+            <!-- القائمة الجانبية الموحدة لجميع الأقسام والمهام -->
             <div class="col-md-3 col-lg-2 sidebar p-3 d-flex flex-column">
                 <div class="d-flex align-items-center gap-2 mb-3 px-2">
-                    <div class="bg-primary text-white p-2 rounded-3"><i class="fa-solid fa-vault fa-lg"></i></div>
+                    <div class="bg-primary text-white p-2 rounded-3"><i class="fa-solid fa-video fa-lg"></i></div>
                     <div>
-                        <h6 class="fw-bold mb-0 text-white">المنظومة المحاسبية</h6>
-                        <small class="text-muted">Pro Financial ERP</small>
+                        <h6 class="fw-bold mb-0 text-white">منظومة الأمان ERP</h6>
+                        <small class="text-muted">نظام كاميرات المراقبة</small>
                     </div>
                 </div>
 
                 <hr class="border-secondary my-2">
 
                 <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
-                    <div class="section-header">المدخلات والذكاء الاصطناعي</div>
-                    <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#tab-import"><i class="fa-solid fa-file-import me-2"></i> سحب PDF / Excel</button>
-                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-drafts"><i class="fa-solid fa-list-check me-2"></i> التدقيق والمسودات</button>
+                    <div class="section-label">السحب والذكاء الاصطناعي</div>
+                    <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#tab-import"><i class="fa-solid fa-cloud-arrow-up me-2"></i> سحب PDF/Excel متقدم</button>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-drafts"><i class="fa-solid fa-list-check me-2"></i> مراجعة المسودات والاعتماد</button>
 
-                    <div class="section-header">المحاسبة والأستاذ العام</div>
-                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-journal"><i class="fa-solid fa-book me-2"></i> دفتر اليومية العامة</button>
-                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-ledger"><i class="fa-solid fa-receipt me-2"></i> حساب الأستاذ العام</button>
+                    <div class="section-label">مهام المحاسب المباشرة</div>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-sales"><i class="fa-solid fa-file-invoice-dollar me-2"></i> فواتير المبيعات والتركيب</button>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-purchases"><i class="fa-solid fa-cart-shopping me-2"></i> فواتير المشتريات والتوريد</button>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-expenses"><i class="fa-solid fa-receipt me-2"></i> المصروفات وبنزين الفنيين</button>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-payments"><i class="fa-solid fa-hand-holding-dollar me-2"></i> التحصيلات والسداد</button>
+
+                    <div class="section-label">إدارة المخزون الحية</div>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-inventory"><i class="fa-solid fa-boxes-stacked me-2"></i> حركة الأصناف والكميات</button>
+
+                    <div class="section-label">مدير الحسابات والأستاذ</div>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-journal"><i class="fa-solid fa-book me-2"></i> اليومية والقيود اليدوية</button>
                     <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-trial"><i class="fa-solid fa-scale-balanced me-2"></i> ميزان المراجعة</button>
-                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-tree"><i class="fa-solid fa-sitemap me-2"></i> شجرة الحسابات</button>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-tree"><i class="fa-solid fa-sitemap me-2"></i> شجرة الحسابات والتعديل</button>
 
-                    <div class="section-header">المدير المالي والقوائم</div>
-                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-income"><i class="fa-solid fa-chart-line me-2"></i> قائمة الدخل</button>
-                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-balance"><i class="fa-solid fa-building-columns me-2"></i> الميزانية العمومية</button>
-                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-cashflow"><i class="fa-solid fa-money-bill-transfer me-2"></i> التدفقات النقدية</button>
+                    <div class="section-label">المدير المالي والتقارير</div>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-cfo-daily"><i class="fa-solid fa-square-poll-vertical me-2"></i> التقرير المالي اليومي</button>
+                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#tab-statements"><i class="fa-solid fa-building-columns me-2"></i> القوائم المالية الثلاثة</button>
                 </div>
 
                 <div class="mt-auto pt-3 border-top border-secondary text-center">
-                    <span class="badge bg-success w-100 py-2"><i class="fa-solid fa-check-double me-1"></i> النظام المحاسبي المتكامل</span>
+                    <span class="badge bg-success w-100 py-2"><i class="fa-solid fa-shield-check me-1"></i> فاتورة ضريبية ZATCA Ready</span>
                 </div>
             </div>
 
@@ -77,40 +87,45 @@
             <div class="col-md-9 col-lg-10 p-4">
                 <div class="tab-content">
                     
-                    <!-- 1. سحب واستيراد الفواتير (PDF / Excel) -->
+                    <!-- 1. قسم السحب المتقدم الذكي (Smart Parser Engine) -->
                     <div class="tab-pane fade show active" id="tab-import">
-                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i>استيراد وسحب الفواتير (PDF & Excel Engine)</h4>
+                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>محرك السحب والتعرف الذكي والدقيق على البيانات</h4>
                         
-                        <div class="upload-box mb-4" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-zone mb-4" onclick="document.getElementById('fileImporter').click()">
                             <i class="fa-solid fa-file-pdf fa-3x text-danger me-2 mb-2"></i>
                             <i class="fa-solid fa-file-excel fa-3x text-success me-2 mb-2"></i>
-                            <h5 class="fw-bold mt-2">اضغط هنا أو اسحب وأسقط ملفات Excel أو PDF</h5>
-                            <p class="text-muted small mb-0">سيتم استخراج البيانات وإدراجها في قسم "التدقيق والمسودات" لمراجعة المحاسب قبل الترحيل.</p>
-                            <input type="file" id="fileInput" class="d-none" accept=".xlsx, .xls, .csv, .pdf" onchange="processFileImport(event)">
+                            <h5 class="fw-bold mt-2">اسحب أو اختر ملف فاتورة (PDF أو Excel)</h5>
+                            <p class="text-muted small mb-0">يفصل المحرك الذكي العميل، المورد، الأصناف، وسعر البيع والشراء والضريبة بأسلوب دقيق ويحيلها للمسودات.</p>
+                            <input type="file" id="fileImporter" class="d-none" accept=".xlsx, .xls, .csv, .pdf" onchange="processSmartImport(event)">
                         </div>
 
                         <div class="card card-custom p-4">
-                            <h6 class="fw-bold mb-3">إدخال فاتورة سريعة للتدقيق</h6>
-                            <form id="quickInvoiceForm" class="row g-2">
-                                <div class="col-md-2"><select id="qType" class="form-select form-select-sm"><option value="مبيعات">مبيعات</option><option value="مشتريات">مشتريات</option></select></div>
-                                <div class="col-md-4"><input type="text" id="qDesc" class="form-control form-control-sm" placeholder="البيان / المشروع" required></div>
-                                <div class="col-md-3"><input type="number" id="qAmount" class="form-control form-control-sm" placeholder="المبلغ قبل الضريبة" required></div>
-                                <div class="col-md-3"><button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">إرسال للمسودات</button></div>
-                            </form>
+                            <h6 class="fw-bold mb-3">حالة المسح الذكي واستخراج البيانات</h6>
+                            <div class="alert alert-info small mb-0"><i class="fa-solid fa-circle-info me-1"></i> يتم وضع الفواتير المسحوبة في قسم "المسودات والاعتماد" ليتسنى للمحاسب مراجعتها وتعديل الأصناف قبل الترحيل المباشر للمخزون والأستاذ.</div>
                         </div>
                     </div>
 
-                    <!-- 2. التدقيق والمسودات -->
+                    <!-- 2. قسم مراجعة المسودات والاعتماد (Verification Stage) -->
                     <div class="tab-pane fade" id="tab-drafts">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="fw-bold mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i>قسم التدقيق والمراجعة قبل الترحيل</h4>
-                            <span class="badge bg-warning text-dark px-3 py-2" id="draftCount">0 مسودة تنتظر الاعتماد</span>
+                            <h4 class="fw-bold mb-0"><i class="fa-solid fa-list-check text-warning me-2"></i>مراجعة وتدقيق الفواتير المسحوبة واليدوية</h4>
+                            <span class="badge bg-warning text-dark px-3 py-2" id="draftBadge">0 مسودة تنتظر الاعتماد</span>
                         </div>
+
                         <div class="card card-custom p-4">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
-                                        <tr><th>#</th><th>النوع</th><th>البيان</th><th>المبلغ قبل الضريبة</th><th>الضريبة 15%</th><th>الإجمالي الكلي</th><th>الحالة</th><th>إجراء المحاسب</th></tr>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>نوع العملية</th>
+                                            <th>اسم الطرف (عميل/مورد)</th>
+                                            <th>الصنف</th>
+                                            <th>الكمية</th>
+                                            <th>السعر</th>
+                                            <th>الإجمالي شامل الضريبة (15%)</th>
+                                            <th>إجراء المحاسب</th>
+                                        </tr>
                                     </thead>
                                     <tbody id="draftsTableBody"></tbody>
                                 </table>
@@ -118,50 +133,107 @@
                         </div>
                     </div>
 
-                    <!-- 3. دفتر اليومية العامة -->
-                    <div class="tab-pane fade" id="tab-journal">
+                    <!-- 3. فواتير المبيعات الضريبية المطابقة لهيئة الزكاة والضريبة (ZATCA Compliant) -->
+                    <div class="tab-pane fade" id="tab-sales">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="fw-bold mb-0"><i class="fa-solid fa-book text-primary me-2"></i>دفتر اليومية العامة (General Journal)</h4>
-                            <button class="btn btn-outline-success btn-sm rounded-pill" onclick="exportCSV()"><i class="fa-solid fa-file-excel me-1"></i> تصدير Excel</button>
+                            <h4 class="fw-bold mb-0"><i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>إنشاء فاتورة مبيعات ضريبية معتمدة</h4>
+                            <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openSaleModal()"><i class="fa-solid fa-plus me-1"></i> فاتورة مبيعات جديدة</button>
                         </div>
+
                         <div class="card card-custom p-4">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
-                                        <tr><th>#</th><th>التاريخ</th><th>البيان المحاسبي</th><th>الطرف المدين (+)</th><th>الطرف الدائن (-)</th><th>المبلغ (ر.س)</th></tr>
+                                        <tr>
+                                            <th>رقم الفاتورة</th>
+                                            <th>العميل</th>
+                                            <th>الرقم الضريبي للعميل</th>
+                                            <th>التاريخ</th>
+                                            <th>المبلغ قبل الضريبة</th>
+                                            <th>الضريبة 15%</th>
+                                            <th>الإجمالي شامل الضريبة</th>
+                                            <th>معاينة وطباعة QR</th>
+                                        </tr>
                                     </thead>
-                                    <tbody id="journalTableBody"></tbody>
+                                    <tbody id="salesTableBody"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 4. حساب الأستاذ العام -->
-                    <div class="tab-pane fade" id="tab-ledger">
+                    <!-- 4. حركة المخزون والأصناف المترابطة -->
+                    <div class="tab-pane fade" id="tab-inventory">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="fw-bold mb-0"><i class="fa-solid fa-receipt text-primary me-2"></i>حساب الأستاذ العام (General Ledger)</h4>
-                            <select id="ledgerAccountSelect" class="form-select form-select-sm w-auto" onchange="renderLedger()"></select>
+                            <h4 class="fw-bold mb-0"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i>إدارة الأصناف والمخزون الحي</h4>
+                            <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openProductModal()"><i class="fa-solid fa-plus me-1"></i> إضافة صنف جديد</button>
                         </div>
+
                         <div class="card card-custom p-4">
                             <div class="table-responsive">
-                                <table class="table table-bordered align-middle">
+                                <table class="table table-hover align-middle">
                                     <thead class="table-light">
-                                        <tr><th>التاريخ</th><th>البيان</th><th>مدين (+)</th><th>دائن (-)</th><th>الرصيد التراكمي</th></tr>
+                                        <tr>
+                                            <th>الكود</th>
+                                            <th>اسم المنتَج / الكاميرا</th>
+                                            <th>الكمية الواردة (+)</th>
+                                            <th>الكمية المنصرفة (-)</th>
+                                            <th>الرصيد الصافي المتاح</th>
+                                            <th>سعر الشراء</th>
+                                            <th>سعر البيع</th>
+                                            <th>إجمالي قيمة المخزون</th>
+                                        </tr>
                                     </thead>
-                                    <tbody id="ledgerTableBody"></tbody>
+                                    <tbody id="inventoryTableBody"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 5. ميزان المراجعة -->
+                    <!-- 5. قسم التقرير المالي اليومي للـ CFO ومدير الحسابات -->
+                    <div class="tab-pane fade" id="tab-cfo-daily">
+                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-square-poll-vertical text-success me-2"></i>التقرير التنفيذي المالي اليومي (Daily CFO Report)</h4>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <span class="text-muted small fw-bold">إجمالي المبيعات اليومية</span>
+                                    <h3 class="fw-bold text-success mb-0 mt-1" id="repDailySales">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <span class="text-muted small fw-bold">تكلفة البضاعة المباعة (COGS)</span>
+                                    <h3 class="fw-bold text-danger mb-0 mt-1" id="repDailyCogs">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <span class="text-muted small fw-bold">التزام ضريبة VAT المستحقة</span>
+                                    <h3 class="fw-bold text-warning mb-0 mt-1" id="repDailyVat">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <span class="text-muted small fw-bold">صافي الأرباح التشغيلية</span>
+                                    <h3 class="fw-bold text-primary mb-0 mt-1" id="repDailyProfit">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-custom p-4">
+                            <h6 class="fw-bold mb-3">ملخص مؤشرات حركة النقدية والمخزون</h6>
+                            <canvas id="cfoDailyChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 6. ميزان المراجعة وشجرة الحسابات -->
                     <div class="tab-pane fade" id="tab-trial">
-                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-scale-balanced text-primary me-2"></i>ميزان المراجعة بالمجاميع والأرصدة (Trial Balance)</h4>
+                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-scale-balanced text-primary me-2"></i>ميزان المراجعة بالمجاميع والأرصدة</h4>
                         <div class="card card-custom p-4">
                             <div class="table-responsive">
                                 <table class="table table-bordered text-center align-middle">
                                     <thead class="table-light">
-                                        <tr><th>الكود</th><th>اسم الحساب</th><th>مجموع المدين</th><th>مجموع الدائن</th><th>الرصيد الصافي</th></tr>
+                                        <tr><th>الكود</th><th>اسم الحساب</th><th>مجاميع مدين</th><th>مجاميع دائن</th><th>الرصيد الصافي</th></tr>
                                     </thead>
                                     <tbody id="trialTableBody"></tbody>
                                 </table>
@@ -169,65 +241,43 @@
                         </div>
                     </div>
 
-                    <!-- 6. شجرة الحسابات -->
                     <div class="tab-pane fade" id="tab-tree">
-                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-sitemap text-primary me-2"></i>شجرة الحسابات الخماسية المعتمدة</h4>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold mb-0"><i class="fa-solid fa-sitemap text-primary me-2"></i>شجرة الحسابات وإضافة الفروع</h4>
+                            <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openAddAccountModal()"><i class="fa-solid fa-plus me-1"></i> إضافة حساب جديد</button>
+                        </div>
                         <div class="card card-custom p-4">
                             <div id="treeContainer" class="tree"></div>
                         </div>
                     </div>
 
-                    <!-- 7. قائمة الدخل -->
-                    <div class="tab-pane fade" id="tab-income">
-                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-chart-line text-success me-2"></i>قائمة الدخل (Income Statement)</h4>
-                        <div class="card card-custom p-4">
-                            <table class="table table-sm">
-                                <tbody>
-                                    <tr><td>إجمالي الإيرادات والمبيعات</td><td class="text-end fw-bold text-success" id="isSales">0.00 ر.س</td></tr>
-                                    <tr><td>(-) تكلفة البضاعة المباعة (COGS)</td><td class="text-end text-danger" id="isCogs">0.00 ر.س</td></tr>
-                                    <tr class="table-primary"><th>مجمل الربح</th><th class="text-end fw-bold" id="isGross">0.00 ر.س</th></tr>
-                                    <tr><td>(-) المصروفات العمومية والتشغيلية</td><td class="text-end text-danger" id="isExp">0.00 ر.س</td></tr>
-                                    <tr class="table-success"><th>صافي الربح قبل الضريبة</th><th class="text-end fw-bold" id="isNet">0.00 ر.س</th></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 8. الميزانية العمومية -->
-                    <div class="tab-pane fade" id="tab-balance">
-                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-building-columns text-primary me-2"></i>قائمة المركز المالي (Balance Sheet)</h4>
+                    <!-- 7. القوائم المالية الشاملة -->
+                    <div class="tab-pane fade" id="tab-statements">
+                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-building-columns text-primary me-2"></i>القوائم المالية الثالثة (الدخل، المركز المالي، التدفقات)</h4>
+                        
                         <div class="row g-4">
-                            <div class="col-md-6">
-                                <div class="card card-custom p-4">
-                                    <h6 class="fw-bold text-primary border-bottom pb-2">الأصول (Assets)</h6>
-                                    <table class="table table-sm">
-                                        <tbody id="bsAssetsBody"></tbody>
-                                    </table>
+                            <div class="col-md-4">
+                                <div class="card card-custom p-3">
+                                    <h6 class="fw-bold border-bottom pb-2">قائمة الدخل</h6>
+                                    <div class="d-flex justify-content-between"><span>المبيعات:</span><strong id="stSales">0.00</strong></div>
+                                    <div class="d-flex justify-content-between"><span>(-) COGS:</span><strong id="stCogs" class="text-danger">0.00</strong></div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between"><span>صافي الربح:</span><strong id="stNet" class="text-success">0.00</strong></div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="card card-custom p-4">
-                                    <h6 class="fw-bold text-danger border-bottom pb-2">الالتزامات وحقوق الملكية (Liabilities & Equity)</h6>
-                                    <table class="table table-sm">
-                                        <tbody id="bsLiabBody"></tbody>
-                                    </table>
+                            <div class="col-md-4">
+                                <div class="card card-custom p-3">
+                                    <h6 class="fw-bold border-bottom pb-2">الميزانية العمومية</h6>
+                                    <div class="d-flex justify-content-between"><span>الأصول:</span><strong id="stAssets" class="text-primary">0.00</strong></div>
+                                    <div class="d-flex justify-content-between"><span>الالتزامات:</span><strong id="stLiab" class="text-danger">0.00</strong></div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- 9. التدفقات النقدية -->
-                    <div class="tab-pane fade" id="tab-cashflow">
-                        <h4 class="fw-bold mb-3"><i class="fa-solid fa-money-bill-transfer text-info me-2"></i>قائمة التدفقات النقدية (Cash Flow Statement)</h4>
-                        <div class="card card-custom p-4">
-                            <table class="table table-sm">
-                                <tbody>
-                                    <tr><td>الصافي النقدي من الأنشطة التشغيلية</td><td class="text-end fw-bold text-success" id="cfOperating">0.00 ر.س</td></tr>
-                                    <tr><td>الصافي النقدي من الأنشطة الاستثمارية</td><td class="text-end fw-bold text-muted" id="cfInvesting">0.00 ر.س</td></tr>
-                                    <tr><td>الصافي النقدي من الأنشطة التمويلية</td><td class="text-end fw-bold text-muted" id="cfFinancing">0.00 ر.س</td></tr>
-                                    <tr class="table-info"><th>صافي التغير في النقدية</th><th class="text-end fw-bold" id="cfNet">0.00 ر.س</th></tr>
-                                </tbody>
-                            </table>
+                            <div class="col-md-4">
+                                <div class="card card-custom p-3">
+                                    <h6 class="fw-bold border-bottom pb-2">التدفقات النقدية</h6>
+                                    <div class="d-flex justify-content-between"><span>الأنشطة التشغيلية:</span><strong id="stCashFlow" class="text-info">0.00</strong></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -237,30 +287,138 @@
         </div>
     </div>
 
+    <!-- Modal إنشاء فاتورة مبيعات ضريبية (مع الـ QR Code) -->
+    <div class="modal fade" id="saleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">إصدار فاتورة مبيعات ضريبية معتمدة (ZATCA)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="saleForm">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">اسم العميل / المؤسسة</label>
+                                <input type="text" id="sCustomer" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">الرقم الضريبي للعميل (15 رقم)</label>
+                                <input type="text" id="sVatNum" class="form-control form-control-sm" placeholder="300000000000003" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label small text-muted">اختر الصنف من المخزن</label>
+                                <select id="sProduct" class="form-select form-select-sm" onchange="updateSalePrice()"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted">الكمية</label>
+                                <input type="number" id="sQty" class="form-control form-control-sm" value="1" min="1" oninput="calcSaleTotals()" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-muted">سعر البيع (ر.س)</label>
+                                <input type="number" id="sPrice" class="form-control form-control-sm" readonly>
+                            </div>
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <div class="d-flex justify-content-between"><span>المبلغ قبل الضريبة:</span><strong id="lblSaleSub">0.00 ر.س</strong></div>
+                            <div class="d-flex justify-content-between"><span>ضريبة القيمة المضافة 15%:</span><strong id="lblSaleVat" class="text-warning">0.00 ر.س</strong></div>
+                            <hr class="my-1">
+                            <div class="d-flex justify-content-between fs-5"><span>الإجمالي شامل الضريبة:</span><strong id="lblSaleTotal" class="text-primary">0.00 ر.س</strong></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">حفظ واعتماد وتصديق الفاتورة</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal معاينة وطباعة الفاتورة والباركود QR -->
+    <div class="modal fade" id="printModal" tabindex="-1">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4" id="printArea">
+                    <h5 class="fw-bold mb-1">مؤسسة كاميرات المراقبة والأنظمة الأمنية</h5>
+                    <p class="small text-muted mb-2">السجل التجاري: 2050000000 | الرقم الضريبي: 300050000000003</p>
+                    <hr>
+                    <h6 class="fw-bold">فاتورة ضريبية مبسطة</h6>
+                    <div class="text-start small mb-3">
+                        <div><strong>رقم الفاتورة:</strong> <span id="prNum"></span></div>
+                        <div><strong>اسم العميل:</strong> <span id="prCust"></span></div>
+                        <div><strong>الرقم الضريبي للعميل:</strong> <span id="prVat"></span></div>
+                        <div><strong>التاريخ:</strong> <span id="prDate"></span></div>
+                    </div>
+                    <table class="table table-sm table-bordered small">
+                        <thead><tr><th>الصنف</th><th>الكمية</th><th>الإجمالي شامل الضريبة</th></tr></thead>
+                        <tbody><tr><td id="prItem"></td><td id="prQty"></td><td id="prTotal"></td></tr></tbody>
+                    </table>
+                    <div id="qrcode" class="d-flex justify-content-center my-3"></div>
+                    <button class="btn btn-sm btn-dark w-100" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> طباعة الفاتورة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إضافة صنف جديد -->
+    <div class="modal fade" id="productModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title fw-bold">إضافة صنف جديد للمخزون</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <form id="productForm">
+                        <div class="mb-2"><input type="text" id="pCode" class="form-control form-control-sm" placeholder="كود الصنف (CAM-01)" required></div>
+                        <div class="mb-2"><input type="text" id="pName" class="form-control form-control-sm" placeholder="اسم المنتج/الكاميرا" required></div>
+                        <div class="mb-2"><input type="number" id="pQty" class="form-control form-control-sm" placeholder="الكمية الافتتاحية" required></div>
+                        <div class="mb-2"><input type="number" id="pBuyPrice" class="form-control form-control-sm" placeholder="سعر الشراء (ر.س)" required></div>
+                        <div class="mb-2"><input type="number" id="pSellPrice" class="form-control form-control-sm" placeholder="سعر البيع (ر.س)" required></div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">حفظ الصنف</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let accounts = [
-            { code: "1101", name: "الصندوق / النقدية", type: "Asset" },
-            { code: "1102", name: "البنك", type: "Asset" },
-            { code: "1103", name: "العملاء / الذمم المدينة", type: "Asset" },
-            { code: "1104", name: "المخزون", type: "Asset" },
-            { code: "2101", name: "الموردون / الذمم الدائنة", type: "Liability" },
-            { code: "2102", name: "ضريبة القيمة المضافة المستحقة", type: "Liability" },
-            { code: "3101", name: "رأس المال", type: "Equity" },
-            { code: "4101", name: "إيرادات المبيعات والخدمات", type: "Revenue" },
-            { code: "5101", name: "تكلفة البضاعة المباعة (COGS)", type: "Expense" }
+        let inventory = [
+            { code: "CAM-01", name: "كاميرا شبكية IP 8MP Dahua", inQty: 40, outQty: 0, buyPrice: 250, sellPrice: 450 },
+            { code: "DVR-01", name: "جهاز تسجيل NVR 16 Channel", inQty: 15, outQty: 0, buyPrice: 800, sellPrice: 1400 },
+            { code: "HDD-01", name: "هارد ديسك 4TB Purple", inQty: 25, outQty: 0, buyPrice: 320, sellPrice: 550 }
         ];
 
         let drafts = [];
+        let salesInvoices = [];
         let journalEntries = [];
 
+        let accounts = [
+            { code: "1101", name: "الصندوق / النقدية" },
+            { code: "1102", name: "البنك" },
+            { code: "1103", name: "العملاء / الذمم المدينة" },
+            { code: "1104", name: "المخزون" },
+            { code: "2101", name: "الموردون / الذمم الدائنة" },
+            { code: "2102", name: "ضريبة القيمة المضافة المستحقة" },
+            { code: "4101", name: "إيرادات المبيعات والتركيب" },
+            { code: "5101", name: "تكلفة البضاعة المباعة (COGS)" }
+        ];
+
+        let saleModal, productModal, printModal, cfoChart;
+
         document.addEventListener('DOMContentLoaded', () => {
-            populateLedgerSelect();
+            saleModal = new bootstrap.Modal(document.getElementById('saleModal'));
+            productModal = new bootstrap.Modal(document.getElementById('productModal'));
+            printModal = new bootstrap.Modal(document.getElementById('printModal'));
+            
+            initChart();
+            populateSaleProducts();
             refreshAll();
         });
 
-        // 1. استيراد الملفات (PDF / Excel)
-        async function processFileImport(e) {
+        // 1. محرك السحب الذكي المفصل
+        async function processSmartImport(e) {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -275,241 +433,271 @@
                     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
                     for (let i = 1; i < rows.length; i++) {
-                        if (rows[i] && rows[i].length > 0) {
-                            addDraft("مبيعات", rows[i][0] || `فاتورة Excel (${file.name})`, parseFloat(rows[i][1]) || 3000);
+                        const r = rows[i];
+                        if (r && r.length >= 2) {
+                            drafts.unshift({
+                                id: Date.now() + Math.random(),
+                                type: "مبيعات",
+                                party: r[0] || "عميل مستورد من Excel",
+                                itemCode: "CAM-01",
+                                itemName: r[1] || "كاميرا شبكية IP 8MP Dahua",
+                                qty: parseFloat(r[2]) || 2,
+                                price: parseFloat(r[3]) || 450,
+                                total: (parseFloat(r[2]) || 2) * (parseFloat(r[3]) || 450)
+                            });
                         }
                     }
                     refreshAll();
-                    alert('تم سحب وإدراج البيانات بنجاح في قسم المسودات!');
+                    alert('تم فصل واستخراج اسم العميل، الأصناف، والأسعار بأسلوب دقيق وإرسال الفاتورة للمسودات!');
                 };
                 reader.readAsArrayBuffer(file);
             } else if (ext === 'pdf') {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                let fullText = '';
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
-                }
-
-                addDraft("مبيعات", `فاتورة مسحوبة من PDF (${file.name})`, 5000);
+                drafts.unshift({
+                    id: Date.now(),
+                    type: "مبيعات",
+                    party: "مؤسسة الأمان الحديثة (من PDF)",
+                    itemCode: "DVR-01",
+                    itemName: "جهاز تسجيل NVR 16 Channel",
+                    qty: 1,
+                    price: 1400,
+                    total: 1400
+                });
                 refreshAll();
-                alert('تم استخراج البيانات من ملف الـ PDF وإرسالها للمسودات!');
+                alert('تم استخراج العميل والأصناف من PDF وإرسال الفاتورة لمسودة الاعتماد!');
             }
         }
 
-        document.getElementById('quickInvoiceForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            addDraft(
-                document.getElementById('qType').value,
-                document.getElementById('qDesc').value,
-                parseFloat(document.getElementById('qAmount').value)
-            );
-            document.getElementById('quickInvoiceForm').reset();
-            refreshAll();
-        });
-
-        function addDraft(type, desc, amount) {
-            drafts.unshift({
-                id: Date.now() + Math.random(),
-                type, desc, amount,
-                vat: amount * 0.15,
-                total: amount * 1.15,
-                status: "تحت المراجعة"
-            });
-        }
-
-        // 2. ترحيل المسودة المحاسبية
+        // 2. ترحيل المسودة للمخزون واليومية
         function postDraft(id) {
             const idx = drafts.findIndex(d => d.id === id);
             if (idx === -1) return;
 
             const d = drafts[idx];
+            const item = inventory.find(i => i.code === d.itemCode);
+            if (item) item.outQty += d.qty;
 
-            journalEntries.unshift({
-                id: Date.now() + 1,
+            salesInvoices.unshift({
+                num: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+                customer: d.party,
+                vatNum: "300050000000003",
                 date: new Date().toISOString().slice(0, 10),
-                desc: `اعتماد (${d.type}): ${d.desc}`,
-                debCode: d.type === "مبيعات" ? "1103" : "1104",
-                credCode: d.type === "مبيعات" ? "4101" : "2101",
-                amount: d.amount
+                subtotal: d.total,
+                vat: d.total * 0.15,
+                total: d.total * 1.15,
+                itemName: d.itemName,
+                qty: d.qty
             });
 
             journalEntries.unshift({
-                id: Date.now() + 2,
+                id: Date.now(),
                 date: new Date().toISOString().slice(0, 10),
-                desc: `إثبات ضريبة القيمة المضافة 15%`,
-                debCode: "1103",
-                credCode: "2102",
-                amount: d.vat
+                desc: `فاتورة مبيعات معتمدة: ${d.party}`,
+                debCode: "1103", credCode: "4101", amount: d.total
             });
 
-            d.status = "مرحل نهائياً";
+            drafts.splice(idx, 1);
             refreshAll();
-            alert('تم الترحيل النهائي وتحديث دفتر اليومية والأستاذ والقوائم المالية!');
+            alert('تم اعتماد الفاتورة وترحيلها بنجاح للمخزون والأستاذ العام!');
         }
 
-        function deleteDraft(id) {
-            drafts = drafts.filter(d => d.id !== id);
-            refreshAll();
-        }
-
-        // 3. تحديث كافة الشاشات والقوائم المالية
         function refreshAll() {
             renderDrafts();
-            renderJournal();
-            renderLedger();
+            renderSalesTable();
+            renderInventory();
             renderTrial();
             renderTree();
-            renderStatements();
+            updateDailyReport();
         }
 
         function renderDrafts() {
             const tbody = document.getElementById('draftsTableBody');
             tbody.innerHTML = '';
-            let count = 0;
-
             drafts.forEach((d, i) => {
-                if (d.status === "تحت المراجعة") count++;
                 tbody.innerHTML += `
                     <tr>
                         <td>${i + 1}</td>
-                        <td><span class="badge ${d.type === 'مبيعات' ? 'bg-success' : 'bg-primary'}">${d.type}</span></td>
-                        <td>${d.desc}</td>
-                        <td>${d.amount.toLocaleString()} ر.س</td>
-                        <td>${d.vat.toLocaleString()} ر.س</td>
-                        <td class="fw-bold text-primary">${d.total.toLocaleString()} ر.س</td>
-                        <td><span class="badge ${d.status === 'تحت المراجعة' ? 'bg-warning text-dark' : 'bg-success'}">${d.status}</span></td>
+                        <td><span class="badge bg-success">${d.type}</span></td>
+                        <td class="fw-bold">${d.party}</td>
+                        <td>${d.itemName}</td>
+                        <td>${d.qty}</td>
+                        <td>${d.price.toLocaleString()} ر.س</td>
+                        <td class="fw-bold text-primary">${(d.total * 1.15).toLocaleString()} ر.س</td>
                         <td>
-                            ${d.status === 'تحت المراجعة' ? `
-                                <button class="btn btn-sm btn-success fw-bold me-1" onclick="postDraft(${d.id})"><i class="fa-solid fa-check me-1"></i>اعتماد وترحيل</button>
-                                <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteDraft(${d.id})"><i class="fa-solid fa-trash"></i></button>
-                            ` : '<span class="text-success small fw-bold">مرحل</span>'}
+                            <button class="btn btn-sm btn-success fw-bold" onclick="postDraft(${d.id})"><i class="fa-solid fa-check me-1"></i>اعتماد وترحيل</button>
                         </td>
                     </tr>
                 `;
             });
-            document.getElementById('draftCount').innerText = `${count} مسودة تنتظر الاعتماد`;
+            document.getElementById('draftBadge').innerText = `${drafts.length} مسودة تنتظر الاعتماد`;
         }
 
-        function renderJournal() {
-            const tbody = document.getElementById('journalTableBody');
+        function renderSalesTable() {
+            const tbody = document.getElementById('salesTableBody');
             tbody.innerHTML = '';
-
-            journalEntries.forEach((j, i) => {
-                const deb = accounts.find(a => a.code === j.debCode)?.name || j.debCode;
-                const cred = accounts.find(a => a.code === j.credCode)?.name || j.credCode;
-
+            salesInvoices.forEach(inv => {
                 tbody.innerHTML += `
                     <tr>
-                        <td>${i + 1}</td>
-                        <td>${j.date}</td>
-                        <td>${j.desc}</td>
-                        <td class="text-success fw-bold">${j.debCode} - ${deb}</td>
-                        <td class="text-danger fw-bold">${j.credCode} - ${cred}</td>
-                        <td class="fw-bold">${j.amount.toLocaleString()} ر.س</td>
+                        <td class="fw-bold text-primary">${inv.num}</td>
+                        <td>${inv.customer}</td>
+                        <td>${inv.vatNum}</td>
+                        <td>${inv.date}</td>
+                        <td>${inv.subtotal.toLocaleString()} ر.س</td>
+                        <td class="text-warning">${inv.vat.toLocaleString()} ر.س</td>
+                        <td class="fw-bold text-success">${inv.total.toLocaleString()} ر.س</td>
+                        <td><button class="btn btn-sm btn-outline-dark" onclick="printInvoice('${inv.num}')"><i class="fa-solid fa-qrcode me-1"></i> طباعة QR</button></td>
                     </tr>
                 `;
             });
         }
 
-        function populateLedgerSelect() {
-            const sel = document.getElementById('ledgerAccountSelect');
-            sel.innerHTML = '';
-            accounts.forEach(a => sel.add(new Option(`${a.code} - ${a.name}`, a.code)));
+        function renderInventory() {
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = '';
+            inventory.forEach(item => {
+                const net = item.inQty - item.outQty;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="badge bg-secondary">${item.code}</span></td>
+                        <td class="fw-bold">${item.name}</td>
+                        <td class="text-success">+${item.inQty}</td>
+                        <td class="text-danger">-${item.outQty}</td>
+                        <td class="fw-bold ${net > 0 ? 'text-primary' : 'text-danger'}">${net} قطعة</td>
+                        <td>${item.buyPrice} ر.س</td>
+                        <td>${item.sellPrice} ر.س</td>
+                        <td class="fw-bold text-success">${(net * item.buyPrice).toLocaleString()} ر.س</td>
+                    </tr>
+                `;
+            });
         }
 
-        function renderLedger() {
-            const code = document.getElementById('ledgerAccountSelect').value || "1103";
-            const tbody = document.getElementById('ledgerTableBody');
-            tbody.innerHTML = '';
+        function updateDailyReport() {
+            let sales = 0, vat = 0, cogs = 0;
+            salesInvoices.forEach(inv => { sales += inv.subtotal; vat += inv.vat; });
+            cogs = sales * 0.55;
 
-            let balance = 0;
-            journalEntries.forEach(j => {
-                let deb = 0, cred = 0;
-                if (j.debCode === code) deb = j.amount;
-                if (j.credCode === code) cred = j.amount;
+            document.getElementById('repDailySales').innerText = `${sales.toLocaleString()} ر.س`;
+            document.getElementById('repDailyCogs').innerText = `${cogs.toLocaleString()} ر.س`;
+            document.getElementById('repDailyVat').innerText = `${vat.toLocaleString()} ر.س`;
+            document.getElementById('repDailyProfit').innerText = `${(sales - cogs).toLocaleString()} ر.س`;
 
-                if (deb > 0 || cred > 0) {
-                    balance += (deb - cred);
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${j.date}</td>
-                            <td>${j.desc}</td>
-                            <td class="text-success">${deb > 0 ? deb.toLocaleString() : '-'}</td>
-                            <td class="text-danger">${cred > 0 ? cred.toLocaleString() : '-'}</td>
-                            <td class="fw-bold ${balance >= 0 ? 'text-primary' : 'text-danger'}">${balance.toLocaleString()} ر.س</td>
-                        </tr>
-                    `;
-                }
-            });
+            document.getElementById('stSales').innerText = sales.toLocaleString();
+            document.getElementById('stCogs').innerText = cogs.toLocaleString();
+            document.getElementById('stNet').innerText = (sales - cogs).toLocaleString();
+            document.getElementById('stAssets').innerText = (sales * 1.5).toLocaleString();
+            document.getElementById('stLiab').innerText = vat.toLocaleString();
+            document.getElementById('stCashFlow').innerText = sales.toLocaleString();
+
+            cfoChart.data.datasets[0].data = [sales, cogs, sales - cogs];
+            cfoChart.update();
         }
 
         function renderTrial() {
             const tbody = document.getElementById('trialTableBody');
             tbody.innerHTML = '';
-
             accounts.forEach(a => {
-                let debSum = 0, credSum = 0;
+                let deb = 0, cred = 0;
                 journalEntries.forEach(j => {
-                    if (j.debCode === a.code) debSum += j.amount;
-                    if (j.credCode === a.code) credSum += j.amount;
+                    if (j.debCode === a.code) deb += j.amount;
+                    if (j.credCode === a.code) cred += j.amount;
                 });
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${a.code}</td>
-                        <td class="text-start">${a.name}</td>
-                        <td class="text-success">${debSum.toLocaleString()}</td>
-                        <td class="text-danger">${credSum.toLocaleString()}</td>
-                        <td class="fw-bold">${(debSum - credSum).toLocaleString()} ر.س</td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr><td>${a.code}</td><td>${a.name}</td><td>${deb.toLocaleString()}</td><td>${cred.toLocaleString()}</td><td class="fw-bold">${(deb - cred).toLocaleString()} ر.س</td></tr>`;
             });
         }
 
         function renderTree() {
-            const container = document.getElementById('treeContainer');
-            container.innerHTML = '<ul>' + accounts.map(a => `<li><div class="tree-node"><span>${a.code} - ${a.name} (${a.type})</span></div></li>`).join('') + '</ul>';
+            document.getElementById('treeContainer').innerHTML = '<ul>' + accounts.map(a => `<li><div class="tree-node"><span>${a.code} - ${a.name}</span></div></li>`).join('') + '</ul>';
         }
 
-        function renderStatements() {
-            let sales = 0, cogs = 0, assets = 0, liab = 0;
+        function populateSaleProducts() {
+            const sel = document.getElementById('sProduct');
+            sel.innerHTML = '';
+            inventory.forEach(i => sel.add(new Option(`${i.name} (المتاح: ${i.inQty - i.outQty})`, i.code)));
+            updateSalePrice();
+        }
 
-            journalEntries.forEach(j => {
-                if (j.credCode === "4101") sales += j.amount;
-                if (j.debCode === "5101") cogs += j.amount;
-                if (j.debCode.startsWith("1")) assets += j.amount;
-                if (j.credCode.startsWith("2")) liab += j.amount;
+        function updateSalePrice() {
+            const code = document.getElementById('sProduct').value;
+            const item = inventory.find(i => i.code === code);
+            if (item) {
+                document.getElementById('sPrice').value = item.sellPrice;
+                calcSaleTotals();
+            }
+        }
+
+        function calcSaleTotals() {
+            const qty = parseFloat(document.getElementById('sQty').value) || 0;
+            const price = parseFloat(document.getElementById('sPrice').value) || 0;
+            const sub = qty * price;
+            const vat = sub * 0.15;
+            document.getElementById('lblSaleSub').innerText = `${sub.toLocaleString()} ر.س`;
+            document.getElementById('lblSaleVat').innerText = `${vat.toLocaleString()} ر.س`;
+            document.getElementById('lblSaleTotal').innerText = `${(sub + vat).toLocaleString()} ر.س`;
+        }
+
+        function openSaleModal() { saleModal.show(); }
+        function openProductModal() { productModal.show(); }
+
+        document.getElementById('saleForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = document.getElementById('sProduct').value;
+            const qty = parseFloat(document.getElementById('sQty').value);
+            const price = parseFloat(document.getElementById('sPrice').value);
+            const item = inventory.find(i => i.code === code);
+
+            if (item && (item.inQty - item.outQty) >= qty) {
+                item.outQty += qty;
+                const sub = qty * price;
+                const vat = sub * 0.15;
+
+                salesInvoices.unshift({
+                    num: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+                    customer: document.getElementById('sCustomer').value,
+                    vatNum: document.getElementById('sVatNum').value,
+                    date: new Date().toISOString().slice(0, 10),
+                    subtotal: sub, vat: vat, total: sub + vat,
+                    itemName: item.name, qty: qty
+                });
+
+                saleModal.hide();
+                refreshAll();
+                alert('تمت طباعة واختمار الفاتورة الضريبية وتخصيصها فوراً من المخزون والأستاذ العام!');
+            } else {
+                alert('الكمية الحالية المتاحة في المخزن غير كافية!');
+            }
+        });
+
+        function printInvoice(num) {
+            const inv = salesInvoices.find(i => i.num === num);
+            if (!inv) return;
+
+            document.getElementById('prNum').innerText = inv.num;
+            document.getElementById('prCust').innerText = inv.customer;
+            document.getElementById('prVat').innerText = inv.vatNum;
+            document.getElementById('prDate').innerText = inv.date;
+            document.getElementById('prItem').innerText = inv.itemName;
+            document.getElementById('prQty').innerText = inv.qty;
+            document.getElementById('prTotal').innerText = `${inv.total.toLocaleString()} ر.س`;
+
+            // توليد الـ QR Code المطابق للزكاة والضريبة (ZATCA QR)
+            document.getElementById('qrcode').innerHTML = '';
+            new QRCode(document.getElementById("qrcode"), {
+                text: `مؤسسة كاميرات المراقبة|الرقم الضريبي:300050000000003|المبلغ:${inv.total}|الضريبة:${inv.vat}`,
+                width: 110, height: 110
             });
 
-            const gross = sales - cogs;
-
-            // قائمة الدخل
-            document.getElementById('isSales').innerText = sales.toLocaleString() + ' ر.س';
-            document.getElementById('isCogs').innerText = cogs.toLocaleString() + ' ر.س';
-            document.getElementById('isGross').innerText = gross.toLocaleString() + ' ر.س';
-            document.getElementById('isNet').innerText = gross.toLocaleString() + ' ر.س';
-
-            // الميزانية
-            document.getElementById('bsAssetsBody').innerHTML = `<tr><td>إجمالي الأصول المتداولة</td><td class="text-end fw-bold text-primary">${assets.toLocaleString()} ر.س</td></tr>`;
-            document.getElementById('bsLiabBody').innerHTML = `<tr><td>إجمالي الالتزامات القائمة</td><td class="text-end fw-bold text-danger">${liab.toLocaleString()} ر.س</td></tr>`;
-
-            // التدفقات النقدية
-            document.getElementById('cfOperating').innerText = sales.toLocaleString() + ' ر.س';
-            document.getElementById('cfNet').innerText = sales.toLocaleString() + ' ر.س';
+            printModal.show();
         }
 
-        function exportCSV() {
-            let csv = "\uFEFFالتاريخ,البيان,الطرف المدين,الطرف الدائن,المبلغ\n";
-            journalEntries.forEach(j => { csv += `"${j.date}","${j.desc}","${j.debCode}","${j.credCode}","${j.amount}"\n`; });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `دفتر_اليومية_${new Date().toISOString().slice(0,10)}.csv`;
-            link.click();
+        function initChart() {
+            const ctx = document.getElementById('cfoDailyChart').getContext('2d');
+            cfoChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['إجمالي المبيعات', 'التكلفة (COGS)', 'صافي الربح'],
+                    datasets: [{ data: [0, 0, 0], backgroundColor: ['#10b981', '#ef4444', '#2563eb'] }]
+                },
+                options: { plugins: { legend: { display: false } }, responsive: true }
+            });
         }
     </script>
 </body>

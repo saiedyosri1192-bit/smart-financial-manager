@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المدير المالي الذكي - Smart Financial Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f4f6f9; color: #333; }
+        .auth-container { max-width: 420px; margin: 80px auto; }
+        .main-header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 1.5rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .stat-card { border: none; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+        .card-custom { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+    <div id="authSection" class="container auth-container">
+        <div class="card p-4 shadow-sm border-0 rounded-4">
+            <div class="text-center mb-4">
+                <div class="icon-box bg-primary text-white mx-auto mb-2" style="width: 60px; height: 60px; font-size: 1.8rem;">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <h3 class="fw-bold text-primary mb-1" id="authTitle">تسجيل الدخول</h3>
+                <p class="text-muted small">مرحباً بك في نظام المدير المالي الذكي</p>
+            </div>
+            <form id="authForm">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">اسم المستخدم</label>
+                    <input type="text" id="username" class="form-control" placeholder="أدخل اسم المستخدم" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">كلمة المرور</label>
+                    <input type="password" id="password" class="form-control" placeholder="أدخل كلمة المرور" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mb-3" id="authBtn">تسجيل الدخول</button>
+                <div class="text-center">
+                    <a href="#" id="toggleAuth" class="text-decoration-none small text-secondary">ليس لديك حساب؟ إنشاء حساب جديد</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="appSection" class="d-none">
+        <header class="main-header mb-4">
+            <div class="container d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fw-bold"><i class="fa-solid fa-wallet me-2"></i>المدير المالي الذكي</h4>
+                <div class="d-flex align-items-center gap-3">
+                    <span id="userGreeting" class="fw-semibold text-light"></span>
+                    <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-1"></i> خروج</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container mb-5">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4"><div class="card stat-card p-3"><span class="text-muted small">إجمالي الإيرادات</span><h3 class="fw-bold text-success mb-0" id="totalIncome">0.00 ر.س</h3></div></div>
+                <div class="col-md-4"><div class="card stat-card p-3"><span class="text-muted small">إجمالي المصروفات</span><h3 class="fw-bold text-danger mb-0" id="totalExpense">0.00 ر.س</h3></div></div>
+                <div class="col-md-4"><div class="card stat-card p-3"><span class="text-muted small">صافي الرصيد</span><h3 class="fw-bold text-primary mb-0" id="netBalance">0.00 ر.س</h3></div></div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-5">
+                    <div class="card card-custom p-4 h-100">
+                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-plus-circle text-primary me-2"></i>إضافة عملية جديدة</h5>
+                        <form id="transactionForm">
+                            <div class="mb-3"><label class="form-label">النوع</label><select class="form-select" id="type"><option value="income">إيراد (+)</option><option value="expense">مصروف (-)</option></select></div>
+                            <div class="mb-3"><label class="form-label">البيان</label><input type="text" class="form-control" id="description" placeholder="الوصف" required></div>
+                            <div class="mb-3"><label class="form-label">المبلغ (ر.س)</label><input type="number" step="0.01" class="form-control" id="amount" placeholder="0.00" required></div>
+                            <div class="mb-3"><label class="form-label">الفئة</label><select class="form-select" id="category"><option value="مبيعات / خدمات">مبيعات / خدمات</option><option value="رواتب وأجور">رواتب وأجور</option><option value="إيجارات وفواتير">إيجارات وفواتير</option><option value="مصاريف عمومية">مصاريف عمومية</option></select></div>
+                            <div class="mb-3"><label class="form-label">التاريخ</label><input type="date" class="form-control" id="date" required></div>
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">حفظ العملية</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card card-custom p-4 h-100"><canvas id="categoryChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="card card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">سجل العمليات المالية</h5>
+                    <button class="btn btn-outline-success btn-sm" onclick="exportToCSV()"><i class="fa-solid fa-file-excel me-1"></i>تصدير Excel</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light"><tr><th>التاريخ</th><th>البيان</th><th>الفئة</th><th>النوع</th><th>المبلغ</th><th>إجراء</th></tr></thead>
+                        <tbody id="transactionList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoginMode = true;
+        let token = localStorage.getItem('token');
+        let transactions = [];
+        let categoryChart;
+
+        document.getElementById('toggleAuth').addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? 'تسجيل الدخول' : 'إنشاء حساب جديد';
+            document.getElementById('authBtn').innerText = isLoginMode ? 'تسجيل الدخول' : 'إنشاء الحساب';
+            document.getElementById('toggleAuth').innerText = isLoginMode ? 'ليس لديك حساب؟ إنشاء حساب جديد' : 'لديك حساب بالفعل؟ تسجيل الدخول';
+        });
+
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isLoginMode ? '/api/login' : '/api/register';
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                if (isLoginMode) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.username);
+                    initApp();
+                } else {
+                    alert('تم إنشاء الحساب بنجاح، يمكنك الآن تسجيل الدخول.');
+                    document.getElementById('toggleAuth').click();
+                }
+            } else { alert(data.message || 'حدث خطأ غير متوقع'); }
+        });
+
+        function initApp() {
+            token = localStorage.getItem('token');
+            if (!token) {
+                document.getElementById('authSection').classList.remove('d-none');
+                document.getElementById('appSection').classList.add('d-none');
+                return;
+            }
+            document.getElementById('authSection').classList.add('d-none');
+            document.getElementById('appSection').classList.remove('d-none');
+            document.getElementById('userGreeting').innerText = `أهلاً، ${localStorage.getItem('username')}`;
+            document.getElementById('date').valueAsDate = new Date();
+            fetchTransactions();
+        }
+
+        async function fetchTransactions() {
+            const res = await fetch('/api/transactions', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.status === 401 || res.status === 403) return logout();
+            transactions = await res.json();
+            updateUI();
+        }
+
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                type: document.getElementById('type').value,
+                description: document.getElementById('description').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                date: document.getElementById('date').value
+            };
+
+            await fetch('/api/transactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(body)
+            });
+
+            document.getElementById('transactionForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+            fetchTransactions();
+        });
+
+        async function deleteTransaction(id) {
+            if (!confirm('هل انت تأكد من حذف العملية؟')) return;
+            await fetch(`/api/transactions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            fetchTransactions();
+        }
+
+        function logout() { localStorage.clear(); initApp(); }
+
+        function updateUI() {
+            const list = document.getElementById('transactionList');
+            list.innerHTML = '';
+            let inc = 0, exp = 0, cats = {};
+
+            transactions.forEach(t => {
+                const amount = parseFloat(t.amount);
+                if (t.type === 'income') inc += amount;
+                if (t.type === 'expense') {
+                    exp += amount;
+                    cats[t.category] = (cats[t.category] || 0) + amount;
+                }
+
+                list.innerHTML += `
+                    <tr>
+                        <td>${t.date}</td><td>${t.description}</td>
+                        <td><span class="badge bg-secondary">${t.category}</span></td>
+                        <td><span class="badge ${t.type === 'income' ? 'bg-success' : 'bg-danger'}">${t.type === 'income' ? 'إيراد' : 'مصروف'}</span></td>
+                        <td class="fw-bold ${t.type === 'income' ? 'text-success' : 'text-danger'}">${t.type === 'income' ? '+' : '-'}${amount.toLocaleString()} ر.س</td>
+                        <td><button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${t.id})"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('totalIncome').innerText = inc.toLocaleString() + ' ر.س';
+            document.getElementById('totalExpense').innerText = exp.toLocaleString() + ' ر.س';
+            document.getElementById('netBalance').innerText = (inc - exp).toLocaleString() + ' ر.س';
+
+            renderChart(cats);
+        }
+
+        function renderChart(cats) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            if (categoryChart) categoryChart.destroy();
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'] }] },
+                options: { plugins: { title: { display: true, text: 'توزيع المصروفات حسب الفئة' } }, responsive: true }
+            });
+        }
+
+        function exportToCSV() {
+            let csv = "\uFEFFالتاريخ,البيان,الفئة,النوع,المبلغ\n";
+            transactions.forEach(t => { csv += `"${t.date}","${t.description}","${t.category}","${t.type === 'income' ? 'إيراد' : 'مصروف'}","${t.amount}"\n`; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `تقرير_مالي_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>

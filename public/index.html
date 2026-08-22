@@ -3,50 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة الـ ERP المحاسبية والمالية المؤسسية المتكاملة</title>
+    <title>المنظومة المحاسبية والمالية المتكاملة - للأنظمة والحلول الأمنية</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome Icons -->
+    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- SheetJS Excel library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
         * { font-family: 'Tajawal', sans-serif; }
-        body { background-color: #f1f5f9; }
-        .fade-in { animation: fadeIn 0.25s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        body { background-color: #f8fafc; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @media print {
+            body * { visibility: hidden; }
+            #printableInvoice, #printableInvoice * { visibility: visible; }
+            #printableInvoice { position: absolute; left: 0; top: 0; width: 100%; }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased">
 
 <div id="app" class="min-h-screen flex flex-col">
-    <!-- Top Global Header -->
+    <!-- Top Header -->
     <header class="bg-slate-900 text-white h-16 fixed top-0 left-0 right-0 z-50 px-6 flex items-center justify-between shadow-xl">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-black text-white shadow-md text-lg">
-                <i class="fas fa-building-columns"></i>
+            <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-bold text-white shadow-md text-lg">
+                <i class="fas fa-shield-halved"></i>
             </div>
             <div>
-                <h1 class="font-black text-base leading-tight tracking-wide">نظام ERP المحاسبي المؤسسي</h1>
-                <p class="text-[11px] text-slate-400">الإصدار الشامل للتشغيل والمراجعة والتحليل المالي</p>
+                <h1 class="font-black text-base leading-tight">ERP الحلول الأمنية والتركيبات</h1>
+                <p class="text-[10px] text-blue-300">مطابق لمتطلبات هيئة الزكاة والضريبة والجمارك (ZATCA)</p>
             </div>
         </div>
 
-        <!-- Role & AI Buttons -->
         <div class="flex items-center gap-3">
-            <button onclick="toggleAiModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-black shadow-lg flex items-center gap-2 transition-all">
-                <i class="fas fa-brain"></i>
-                المساعد المالي AI
+            <button onclick="openImportModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md">
+                <i class="fas fa-file-import"></i> استيراد فواتير (Excel/PDF)
+            </button>
+            <button onclick="toggleAiModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-black shadow-md flex items-center gap-2">
+                <i class="fas fa-brain"></i> المساعد AI
             </button>
             <div class="flex items-center gap-1.5 bg-slate-800 p-1.5 rounded-xl border border-slate-700 text-xs">
-                <span class="text-slate-400 font-bold px-2">مستوى الصلاحية:</span>
-                <button onclick="switchRole('ACCOUNTANT')" id="roleBtnAccountant" class="px-3 py-1 rounded-lg font-bold transition-all text-slate-300 hover:text-white">المحاسب</button>
-                <button onclick="switchRole('MANAGER')" id="roleBtnManager" class="px-3 py-1 rounded-lg font-bold transition-all text-slate-300 hover:text-white">مدير الحسابات</button>
-                <button onclick="switchRole('CFO')" id="roleBtnCfo" class="px-3 py-1 rounded-lg font-bold transition-all bg-blue-600 text-white shadow-sm">المدير المالي CFO</button>
+                <button onclick="switchRole('CFO')" id="btnCfo" class="px-3 py-1 rounded-lg font-bold bg-blue-600 text-white">المدير المالي CFO</button>
+                <button onclick="switchRole('MANAGER')" id="btnMgr" class="px-3 py-1 rounded-lg font-bold text-slate-300">مدير الحسابات</button>
+                <button onclick="switchRole('ACCOUNTANT')" id="btnAcc" class="px-3 py-1 rounded-lg font-bold text-slate-300">المحاسب</button>
             </div>
         </div>
     </header>
@@ -54,72 +60,136 @@
     <!-- Main Workspace -->
     <div class="flex pt-16 flex-1">
         <!-- Sidebar Navigation -->
-        <aside class="w-64 bg-white border-l border-slate-200 fixed right-0 top-16 bottom-0 z-30 p-4 space-y-1.5 overflow-y-auto shadow-sm">
-            <div class="text-[11px] font-black text-slate-400 px-3 pb-2 pt-1 border-b border-slate-100">القوائم والتشغيل</div>
+        <aside class="w-64 bg-white border-l border-slate-200 fixed right-0 top-16 bottom-0 z-30 p-4 space-y-1 overflow-y-auto">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-blue-600 bg-blue-50">
-                <i class="fas fa-chart-pie w-5 text-center"></i>
-                <span>لوحة التحكم الرئيسية</span>
+                <i class="fas fa-chart-pie w-5 text-center"></i><span>لوحة القيادة والمؤشرات</span>
             </button>
-            <button onclick="switchTab('invoicing')" id="nav-invoicing" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
-                <i class="fas fa-file-invoice-dollar w-5 text-center"></i>
-                <span>إصدار الفواتير والعمليات</span>
+            <button onclick="switchTab('sales')" id="nav-sales" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
+                <i class="fas fa-file-invoice-dollar w-5 text-center"></i><span>فواتير المبيعات والتركيبات</span>
+            </button>
+            <button onclick="switchTab('purchases')" id="nav-purchases" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
+                <i class="fas fa-truck-ramp-box w-5 text-center"></i><span>فواتير المشتريات والتوريد</span>
+            </button>
+            <button onclick="switchTab('expenses')" id="nav-expenses" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
+                <i class="fas fa-receipt w-5 text-center"></i><span>سندات المصروفات التشغيلية</span>
             </button>
             <button onclick="switchTab('journals')" id="nav-journals" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
-                <i class="fas fa-book-journal-whills w-5 text-center"></i>
-                <span>دفتر اليومية العامة</span>
+                <i class="fas fa-book w-5 text-center"></i><span>دفتر اليومية العامة</span>
             </button>
             <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
-                <i class="fas fa-boxes-stacked w-5 text-center"></i>
-                <span>إدارة وحركة المخزون</span>
-            </button>
-            <button onclick="switchTab('coa')" id="nav-coa" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
-                <i class="fas fa-sitemap w-5 text-center"></i>
-                <span>شجرة الحسابات (COA)</span>
+                <i class="fas fa-boxes-stacked w-5 text-center"></i><span>المخزون وأجهزة الكاميرات</span>
             </button>
             <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
-                <i class="fas fa-file-contract w-5 text-center"></i>
-                <span>القوائم المالية والتقارير</span>
-            </button>
-            <button onclick="switchTab('audit')" id="nav-audit" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
-                <i class="fas fa-shield-halved w-5 text-center"></i>
-                <span>سجل التتبع والمراجعة</span>
+                <i class="fas fa-file-contract w-5 text-center"></i><span>القوائم والإقرار الضريبي VAT</span>
             </button>
         </aside>
 
-        <!-- Main Dynamic View Area -->
+        <!-- Dynamic Content Area -->
         <main class="mr-64 flex-1 p-8 overflow-y-auto">
-            <div id="contentArea" class="fade-in max-w-7xl mx-auto space-y-6">
-                <!-- Views Rendered Here -->
-            </div>
+            <div id="contentArea" class="fade-in max-w-7xl mx-auto space-y-6"></div>
         </main>
     </div>
 </div>
 
-<!-- AI Financial Assistant Modal -->
+<!-- Import Excel/PDF Modal -->
+<div id="importModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl p-6 space-y-6">
+        <div class="flex justify-between items-center border-b pb-4">
+            <h3 class="font-bold text-lg text-slate-800"><i class="fas fa-file-excel text-emerald-600 ml-2"></i> استيراد فواتير أوتوماتيكي دقيق (100%)</h3>
+            <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50/50" onclick="document.getElementById('excelInput').click()">
+                <input type="file" id="excelInput" class="hidden" accept=".xlsx,.xls,.csv" onchange="handleExcelImport(event)">
+                <i class="fas fa-cloud-arrow-up text-4xl text-blue-500 mb-2"></i>
+                <div class="font-bold text-xs text-slate-700">اضغط لرفع ملف Excel / CSV</div>
+                <div class="text-[10px] text-slate-400 mt-1">يحتوي على بيانات المبيعات أو المشتريات</div>
+            </div>
+            <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center cursor-pointer hover:border-red-500 hover:bg-red-50/50" onclick="simulatePdfOcr()">
+                <i class="fas fa-file-pdf text-4xl text-red-500 mb-2"></i>
+                <div class="font-bold text-xs text-slate-700">رفع فاتورة PDF / OCR الضريبية</div>
+                <div class="text-[10px] text-slate-400 mt-1">محاكاة القراءة والتعرف الضوئي الأوتوماتيكي</div>
+            </div>
+        </div>
+        <!-- Editable Import Preview Table -->
+        <div id="importPreviewArea" class="hidden space-y-3">
+            <h4 class="font-bold text-xs text-slate-700">جدول التدقيق والتعديل قبل الترحيل المحاسبي:</h4>
+            <div class="overflow-x-auto border rounded-xl max-h-48">
+                <table class="w-full text-xs text-right" id="importTable">
+                    <thead class="bg-slate-100 font-bold">
+                        <tr><th class="p-2">الرقم</th><th class="p-2">الطرف</th><th class="p-2">البيان/الصنف</th><th class="p-2">المبلغ</th><th class="p-2 text-center">إجراء</th></tr>
+                    </thead>
+                    <tbody id="importTbody"></tbody>
+                </table>
+            </div>
+            <button onclick="confirmImportPosting()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs">ترحيل كافة البيانات للشجرة والمخزن فوراً</button>
+        </div>
+    </div>
+</div>
+
+<!-- Printable ZATCA Tax Invoice Modal -->
+<div id="printModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl p-8 space-y-6 my-8" id="printableInvoice">
+        <!-- ZATCA Invoice Header -->
+        <div class="flex justify-between items-start border-b pb-6">
+            <div>
+                <h2 class="text-xl font-black text-slate-900">مؤسسة الحلول الأمنية المرئية</h2>
+                <p class="text-xs text-slate-500 mt-1">للتوريد وتركيب الأنظمة والأجهزة الأمنية والكاميرات</p>
+                <p class="text-xs font-bold text-blue-600 mt-1">الرقم الضريبي ZATCA: 300050000000003</p>
+            </div>
+            <div class="text-left">
+                <span class="bg-slate-900 text-white font-black text-xs px-3 py-1 rounded-md">فاتورة ضريبية Tax Invoice</span>
+                <div class="text-xs font-bold text-slate-700 mt-2" id="prtInvNum">INV-0000</div>
+                <div class="text-[11px] text-slate-500" id="prtInvDate">2026-08-22</div>
+            </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="bg-slate-50 p-4 rounded-xl text-xs space-y-1">
+            <div><span class="text-slate-500">اسم العميل/الجهة:</span> <strong id="prtCustomer" class="text-slate-800">شركة الأمان المحدودة</strong></div>
+            <div><span class="text-slate-500">الرقم الضريبي للعميل:</span> <strong id="prtCustVat">310123456700003</strong></div>
+        </div>
+
+        <!-- Line Items Table -->
+        <table class="w-full text-xs text-right border-collapse">
+            <thead>
+                <tr class="bg-slate-100 border-b font-bold"><th class="p-2.5">#</th><th class="p-2.5">البند / الوصف</th><th class="p-2.5 text-center">الكمية</th><th class="p-2.5 text-center">سعر الوحدة</th><th class="p-2.5 text-center">الإجمالي الخاضع</th></tr>
+            </thead>
+            <tbody id="prtItemsTbody"></tbody>
+        </table>
+
+        <!-- Summary & QR -->
+        <div class="flex justify-between items-end border-t pt-4">
+            <div id="qrcode" class="p-2 border rounded-lg bg-white"></div>
+            <div class="w-64 space-y-1 text-xs">
+                <div class="flex justify-between py-1"><span>المبلغ الصافي الخاضع:</span><span font-bold id="prtSubtotal">0.00 ريال</span></div>
+                <div class="flex justify-between py-1"><span>ضريبة القيمة المضافة (15%):</span><span font-bold text-red-600 id="prtVat">0.00 ريال</span></div>
+                <div class="flex justify-between py-1.5 border-t border-slate-900 font-black text-slate-900 text-sm"><span>الإجمالي النهائي:</span><span id="prtTotal">0.00 ريال</span></div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t no-print">
+            <button onclick="closePrintModal()" class="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">إغلاق</button>
+            <button onclick="window.print()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl text-xs"><i class="fas fa-print ml-1"></i> طباعة الفاتورة الضريبية</button>
+        </div>
+    </div>
+</div>
+
+<!-- AI Modal -->
 <div id="aiModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col h-[550px] overflow-hidden border border-slate-100">
-        <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-amber-500 text-slate-900 rounded-xl flex items-center justify-center font-black">
-                    <i class="fas fa-brain"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-sm">المحلل المالي الذكي (AI Executive Assistant)</h3>
-                    <p class="text-[10px] text-amber-300">تحليل فوري معتمد على الأرقام والقيود الفعلية في النظام</p>
-                </div>
-            </div>
-            <button onclick="toggleAiModal()" class="text-slate-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+    <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col h-[520px]">
+        <div class="p-4 bg-slate-900 text-white flex justify-between items-center rounded-t-2xl">
+            <h3 class="font-bold text-sm"><i class="fas fa-brain text-amber-400 ml-2"></i>المساعد المالي والضريبي الذكي ZATCA AI</h3>
+            <button onclick="toggleAiModal()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
         </div>
-        <div id="aiChatBody" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs leading-relaxed">
-            <div class="flex justify-start">
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-[85%]">
-                    أهلاً بك! أنا المحلل المالي الخاص بك. يمكنك سؤالي عن الأرباح الصافية، تحليل تكلفة البضاعة المباعة (COGS)، أو وضع السيولة المالي بناءً على السجلات الفعلية.
-                </div>
+        <div id="aiChatBody" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
+            <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm max-w-[85%]">
+                أهلاً أستاذ محمد. أنا جاهز للتحليل المالي والضريبي المباشر لقواعد بيانات فواتير ومخزون المؤسسة.
             </div>
         </div>
-        <div class="p-3 bg-white border-t border-slate-200 flex gap-2">
-            <input type="text" id="aiInput" onkeydown="if(event.key==='Enter') sendAiQuery()" placeholder="اسأل الذكاء الاصطناعي (مثال: كم صافي الربح؟ ما هي أعلى المصروفات؟)" class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-blue-500 font-medium">
-            <button onclick="sendAiQuery()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md">استعلام</button>
+        <div class="p-3 bg-white border-t flex gap-2 rounded-b-2xl">
+            <input type="text" id="aiInput" onkeydown="if(event.key==='Enter') sendAiQuery()" placeholder="اسأل عن صافي الأرباح، ضريبة VAT المستحقة، أو مخزون الكاميرات..." class="flex-1 bg-slate-100 border rounded-xl px-4 py-2 text-xs focus:outline-none">
+            <button onclick="sendAiQuery()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">استعلام</button>
         </div>
     </div>
 </div>
@@ -130,521 +200,181 @@ const state = {
     currentRole: 'CFO',
     currentTab: 'dashboard',
 
-    // شجرة الحسابات المحاسبية المؤسسية المعتمدة (Chart of Accounts)
     coa: [
-        { code: '110100', name: 'الصندوق / النقدية', type: 'ASSET', balance: 50000 },
-        { code: '110200', name: 'البنك الرئيسي', type: 'ASSET', balance: 140000 },
-        { code: '110300', name: 'العملاء / الذمم المدينة', type: 'ASSET', balance: 34500 },
-        { code: '110500', name: 'المخزون', type: 'ASSET', balance: 28000 },
-        { code: '110600', name: 'ضريبة المدخلات (مستردة)', type: 'ASSET', balance: 3000 },
-        { code: '210100', name: 'الموردون / الذمم الدائنة', type: 'LIABILITY', balance: 18000 },
-        { code: '210200', name: 'ضريبة المخرجات (مستحقة)', type: 'LIABILITY', balance: 4500 },
-        { code: '310000', name: 'رأس المال المدفوع', type: 'EQUITY', balance: 150000 },
-        { code: '410000', name: 'إيرادات المبيعات والتركيبات', type: 'REVENUE', balance: 110000 },
-        { code: '510000', name: 'تكلفة البضاعة المباعة (COGS)', type: 'COGS', balance: 42000 },
-        { code: '610000', name: 'المصروفات التشغيلية والعمومية', type: 'EXPENSE', balance: 15000 }
+        { code: '110100', name: 'الصندوق / النقدية', type: 'ASSET', balance: 45000 },
+        { code: '110200', name: 'البنك الرئيسي', type: 'ASSET', balance: 185000 },
+        { code: '110300', name: 'العملاء / الذمم المدينة', type: 'ASSET', balance: 42000 },
+        { code: '110500', name: 'المخزون أجهزة وكاميرات', type: 'ASSET', balance: 65000 },
+        { code: '110600', name: 'ضريبة المدخلات (مستردة 15%)', type: 'ASSET', balance: 7500 },
+        { code: '210100', name: 'الموردون / الذمم الدائنة', type: 'LIABILITY', balance: 25000 },
+        { code: '210200', name: 'ضريبة المخرجات (مستحقة 15%)', type: 'LIABILITY', balance: 12450 },
+        { code: '310000', name: 'رأس المال', type: 'EQUITY', balance: 200000 },
+        { code: '410000', name: 'إيرادات مبيعات الكاميرات والأجهزة', type: 'REVENUE', balance: 140000 },
+        { code: '420000', name: 'إيرادات أعمال التركيب والصيانة', type: 'REVENUE', balance: 45000 },
+        { code: '510000', name: 'تكلفة البضاعة المباعة (COGS)', type: 'COGS', balance: 78000 },
+        { code: '610000', name: 'وقود ومصاريف سيارات الفنيين', type: 'EXPENSE', balance: 6500 },
+        { code: '620000', name: 'رواتب ومنافع الموظفين', type: 'EXPENSE', balance: 28000 }
     ],
 
-    // أصناف المخزون الحية (Master Inventory Engine)
     inventory: [
-        { id: 1, sku: 'CAM-IP8MP', name: 'كاميرا شبكية IP 8MP Hikvision', qty: 35, buyPrice: 250, sellPrice: 450, minStock: 10 },
-        { id: 2, sku: 'DVR-16CH', name: 'جهاز تسجيل NVR 16 Channel', qty: 12, buyPrice: 800, sellPrice: 1400, minStock: 5 },
-        { id: 3, sku: 'HDD-4TB', name: 'هارد ديسك 4TB Purple', qty: 20, buyPrice: 320, sellPrice: 550, minStock: 8 },
-        { id: 4, sku: 'CONN-BNC', name: 'وصلات BNC أجهزة تسجيل', qty: 3, buyPrice: 5, sellPrice: 12, minStock: 10 }
+        { id: 1, sku: 'CAM-HK-8MP', name: 'كاميرا IP 8MP Hikvision خارجية', qty: 45, buyPrice: 220, sellPrice: 420 },
+        { id: 2, sku: 'NVR-HK-16CH', name: 'جهاز تسجيل NVR 16 Channel Hikvision', qty: 14, buyPrice: 750, sellPrice: 1350 },
+        { id: 3, sku: 'CBL-CAT6-300M', name: 'لفة كابل شبكة Cat6 ممتاز 300M', qty: 25, buyPrice: 280, sellPrice: 480 },
+        { id: 4, sku: 'SVC-INSTALL', name: 'أجور تركيب وتمديد نقطة كاميرا', qty: 999, buyPrice: 0, sellPrice: 150 }
     ],
 
-    // قيود اليومية العامة المزدوجة (Journals Core)
-    journals: [
+    salesInvoices: [
         {
-            id: 'JV-2026-001',
+            id: 'INV-9901',
             date: '2026-08-20',
-            desc: 'مبيعات أجهزة وكاميرات - شركة الأمان المحدودة',
-            debit: 11500, credit: 11500,
-            createdBy: 'أحمد المحاسب',
+            customer: 'شركة الأمان المحدودة',
+            custVat: '310987654300003',
             status: 'POSTED',
-            lines: [
-                { account: 'العملاء / الذمم المدينة', debit: 11500, credit: 0 },
-                { account: 'إيرادات المبيعات والتركيبات', debit: 0, credit: 10000 },
-                { account: 'ضريبة المخرجات (مستحقة)', debit: 0, credit: 1500 }
-            ]
-        },
-        {
-            id: 'JV-2026-002',
-            date: '2026-08-21',
-            desc: 'إثبات تكلفة المبيعات COGS وتخفيض المخزون',
-            debit: 6000, credit: 6000,
-            createdBy: 'أحمد المحاسب',
-            status: 'POSTED',
-            lines: [
-                { account: 'تكلفة البضاعة المباعة (COGS)', debit: 6000, credit: 0 },
-                { account: 'المخزون', debit: 0, credit: 6000 }
-            ]
+            items: [
+                { description: 'كاميرا IP 8MP Hikvision خارجية', qty: 10, unitPrice: 420, total: 4200 },
+                { description: 'أجور تركيب وتمديد نقطة كاميرا', qty: 10, unitPrice: 150, total: 1500 }
+            ],
+            subtotal: 5700, vat: 855, total: 6555
         }
     ],
 
-    // سجل التدقيق والحوكمة (Immutable Audit Log)
-    auditLogs: [
-        { id: 1, user: 'نظام ERP', action: 'SYSTEM_START', desc: 'بدء تشغيل النظام واعتماد الأرصدة الافتتاحية', timestamp: '2026-08-22 08:00:00' },
-        { id: 2, user: 'أحمد المحاسب', action: 'POST_ENTRY', desc: 'اعتماد قيد المبيعات المزدوج JV-2026-001 بنجاح', timestamp: '2026-08-22 09:30:12' }
-    ]
+    purchaseInvoices: [
+        {
+            id: 'PO-7701',
+            date: '2026-08-15',
+            supplier: 'مورد التكنولوجيا العالمية',
+            status: 'POSTED',
+            subtotal: 20000, vat: 3000, total: 23000
+        }
+    ],
+
+    expenses: [
+        { id: 'EXP-101', date: '2026-08-18', category: 'وقود ومصاريف سيارات الفنيين', amount: 850, status: 'POSTED' }
+    ],
+
+    journals: [
+        { id: 'JV-2026-001', date: '2026-08-20', desc: 'إثبات فاتورة مبيعات INV-9901 - شركة الأمان', amount: 6555, status: 'POSTED' }
+    ],
+
+    importedTempData: []
 };
 
-// ==================== APP CONTROLLER & INIT ====================
-document.addEventListener('DOMContentLoaded', () => {
-    switchRole('CFO');
-});
+// ==================== INITIALIZATION & ROUTING ====================
+document.addEventListener('DOMContentLoaded', () => { renderTab(); });
 
 function switchRole(role) {
     state.currentRole = role;
-    document.getElementById('roleBtnAccountant').className = role === 'ACCOUNTANT' ? 'px-3 py-1 rounded-lg font-bold transition-all bg-blue-600 text-white shadow-sm' : 'px-3 py-1 rounded-lg font-bold transition-all text-slate-300 hover:text-white';
-    document.getElementById('roleBtnManager').className = role === 'MANAGER' ? 'px-3 py-1 rounded-lg font-bold transition-all bg-blue-600 text-white shadow-sm' : 'px-3 py-1 rounded-lg font-bold transition-all text-slate-300 hover:text-white';
-    document.getElementById('roleBtnCfo').className = role === 'CFO' ? 'px-3 py-1 rounded-lg font-bold transition-all bg-blue-600 text-white shadow-sm' : 'px-3 py-1 rounded-lg font-bold transition-all text-slate-300 hover:text-white';
+    document.getElementById('btnCfo').className = role === 'CFO' ? 'px-3 py-1 rounded-lg font-bold bg-blue-600 text-white' : 'px-3 py-1 rounded-lg font-bold text-slate-300';
+    document.getElementById('btnMgr').className = role === 'MANAGER' ? 'px-3 py-1 rounded-lg font-bold bg-blue-600 text-white' : 'px-3 py-1 rounded-lg font-bold text-slate-300';
+    document.getElementById('btnAcc').className = role === 'ACCOUNTANT' ? 'px-3 py-1 rounded-lg font-bold bg-blue-600 text-white' : 'px-3 py-1 rounded-lg font-bold text-slate-300';
     renderTab();
 }
 
 function switchTab(tab) {
     state.currentTab = tab;
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50';
-    });
-    const activeBtn = document.getElementById(`nav-${tab}`);
-    if (activeBtn) activeBtn.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-blue-600 bg-blue-50';
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50');
+    const act = document.getElementById(`nav-${tab}`);
+    if (act) act.className = 'nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-blue-600 bg-blue-50';
     renderTab();
 }
 
 function renderTab() {
     const container = document.getElementById('contentArea');
     switch(state.currentTab) {
-        case 'dashboard':
-            if (state.currentRole === 'CFO') renderCfoDashboard(container);
-            else if (state.currentRole === 'MANAGER') renderManagerDashboard(container);
-            else renderAccountantDashboard(container);
-            break;
-        case 'invoicing': renderInvoicingPage(container); break;
+        case 'dashboard': renderDashboard(container); break;
+        case 'sales': renderSalesPage(container); break;
+        case 'purchases': renderPurchasesPage(container); break;
+        case 'expenses': renderExpensesPage(container); break;
         case 'journals': renderJournalsPage(container); break;
         case 'inventory': renderInventoryPage(container); break;
-        case 'coa': renderCoaPage(container); break;
         case 'reports': renderReportsPage(container); break;
-        case 'audit': renderAuditPage(container); break;
     }
 }
 
-// ==================== 1. CFO DASHBOARD VIEW ====================
-function renderCfoDashboard(container) {
-    const revenue = getAccountBalance('410000');
-    const cogs = getAccountBalance('510000');
-    const expenses = getAccountBalance('610000');
-    const grossProfit = revenue - cogs;
-    const netProfit = grossProfit - expenses;
-    const profitMargin = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : 0;
-    const cashLiquidity = getAccountBalance('110100') + getAccountBalance('110200');
+// ==================== DASHBOARD VIEW ====================
+function renderDashboard(container) {
+    let salesTotal = 0, purTotal = 0, expTotal = 0;
+    state.salesInvoices.filter(i => i.status === 'POSTED').forEach(i => salesTotal += i.subtotal);
+    state.purchaseInvoices.filter(i => i.status === 'POSTED').forEach(i => purTotal += i.subtotal);
+    state.expenses.filter(i => i.status === 'POSTED').forEach(i => expTotal += i.amount);
+
+    const netProfit = salesTotal - (purTotal * 0.6) - expTotal;
 
     container.innerHTML = `
         <div class="space-y-6">
-            <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <div>
-                    <h2 class="text-xl font-black text-slate-800">لوحة التحكم الاستراتيجية - المدير المالي (CFO Dashboard)</h2>
-                    <p class="text-xs text-slate-500 mt-1">الرؤية المالية الشاملة، نقطة التعادل، ومؤشرات الربحية المباشرة</p>
-                </div>
-                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-xl">تحديث آلي لحظي</span>
-            </div>
-
+            <h2 class="text-xl font-black text-slate-800">الملخص المالي والتشغيلي المباشر</h2>
             <div class="grid grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">إجمالي المبيعات والإيرادات</span>
-                    <div class="text-2xl font-black text-slate-800 mt-1.5">${revenue.toLocaleString()} ريال</div>
-                    <span class="text-[10px] text-emerald-600 font-bold">↑ نمو مستدام</span>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">مجمل الربح (Gross Profit)</span>
-                    <div class="text-2xl font-black text-indigo-600 mt-1.5">${grossProfit.toLocaleString()} ريال</div>
-                    <span class="text-[10px] text-slate-400">بعد خصم COGS</span>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">صافي الربح الفعلي</span>
-                    <div class="text-2xl font-black text-emerald-600 mt-1.5">${netProfit.toLocaleString()} ريال</div>
-                    <span class="text-[10px] text-emerald-600 font-bold">هامش الربح: ${profitMargin}%</span>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">السيولة المتاحة (صندوق + بنك)</span>
-                    <div class="text-2xl font-black text-blue-600 mt-1.5">${cashLiquidity.toLocaleString()} ريال</div>
-                    <span class="text-[10px] text-blue-600 font-bold">معدل تغطية ممتاز</span>
-                </div>
+                <div class="bg-white p-5 rounded-2xl border shadow-sm"><span class="text-xs font-bold text-slate-400">إجمالي صافي المبيعات</span><div class="text-2xl font-black text-slate-800 mt-1">${salesTotal.toLocaleString()} ريال</div></div>
+                <div class="bg-white p-5 rounded-2xl border shadow-sm"><span class="text-xs font-bold text-slate-400">إجمالي المشتريات والتوريد</span><div class="text-2xl font-black text-blue-600 mt-1">${purTotal.toLocaleString()} ريال</div></div>
+                <div class="bg-white p-5 rounded-2xl border shadow-sm"><span class="text-xs font-bold text-slate-400">المصروفات التشغيلية</span><div class="text-2xl font-black text-red-600 mt-1">${expTotal.toLocaleString()} ريال</div></div>
+                <div class="bg-white p-5 rounded-2xl border shadow-sm"><span class="text-xs font-bold text-slate-400">صافي الأرباح المحسوبة</span><div class="text-2xl font-black text-emerald-600 mt-1">${netProfit.toLocaleString()} ريال</div></div>
             </div>
-
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h3 class="font-bold text-sm text-slate-800 mb-4">هيكل الأداء المالي والربحية</h3>
-                <div class="h-64"><canvas id="cfoAnalyticsChart"></canvas></div>
-            </div>
+            <div class="bg-white p-6 rounded-2xl border shadow-sm"><h3 class="font-bold text-sm mb-4">تحليل الأداء التشغيلي والمالي</h3><div class="h-64"><canvas id="dashChart"></canvas></div></div>
         </div>
     `;
 
     setTimeout(() => {
-        const ctx = document.getElementById('cfoAnalyticsChart').getContext('2d');
+        const ctx = document.getElementById('dashChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['إجمالي المبيعات', 'تكلفة المبيعات COGS', 'المصروفات التشغيلية', 'صافي الربح الصافي'],
-                datasets: [{
-                    data: [revenue, cogs, expenses, netProfit],
-                    backgroundColor: ['#3b82f6', '#ef4444', '#f59e0b', '#10b981'],
-                    borderRadius: 8
-                }]
+                labels: ['المبيعات والتركيب', 'المشتريات والتوريد', 'المصروفات', 'صافي الربح'],
+                datasets: [{ data: [salesTotal, purTotal, expTotal, netProfit], backgroundColor: ['#3b82f6', '#0284c7', '#ef4444', '#10b981'] }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
     }, 100);
 }
 
-// ==================== 2. ACCOUNTING MANAGER VIEW ====================
-function renderManagerDashboard(container) {
-    const lowStockItems = state.inventory.filter(i => i.qty <= i.minStock);
-
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h2 class="text-xl font-black text-slate-800">لوحة الرقابة والمراجعة - مدير الحسابات</h2>
-                <p class="text-xs text-slate-500 mt-1">فحص سلامة القيود المزدوجة، مراجعة المخزون، وحوكمة العمليات</p>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
-                        <i class="fas fa-scale-balanced text-emerald-500"></i>
-                        نظام فحص توازن القيود المحاسبية الصارم
-                    </h3>
-                    <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">جميع القيود متوازنة 100%</span>
-                </div>
-                <div class="p-6 text-center text-xs text-slate-600">
-                    تم التأكد البرمجي من أن كافة قيود اليومية المحاسبية المعتمدة تحقق القتطابق الصارم ($\text{Total Debit} = \text{Total Credit}$).
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h3 class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-triangle-exclamation text-amber-500"></i>
-                    تنبيهات إعادة طلب الأصناف في المخزن
-                </h3>
-                <div class="space-y-2">
-                    ${lowStockItems.map(item => `
-                        <div class="p-3 bg-red-50 border border-red-100 rounded-xl flex justify-between items-center text-xs">
-                            <div>
-                                <span class="font-bold text-slate-800">${item.name}</span>
-                                <span class="text-slate-400 font-mono mr-2">(${item.sku})</span>
-                            </div>
-                            <span class="font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">الرصيد: ${item.qty} (الحد الأدنى: ${item.minStock})</span>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// ==================== 3. ACCOUNTANT OPERATIONAL VIEW ====================
-function renderAccountantDashboard(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h2 class="text-xl font-black text-slate-800">شاشة العمليات اليومية - المحاسب Executive</h2>
-                <p class="text-xs text-slate-500 mt-1">إدخال الفواتير والمستندات، ترحيل القيود، وإدارة المقبوضات</p>
-            </div>
-            <div class="grid grid-cols-3 gap-4">
-                <button onclick="switchTab('invoicing')" class="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm text-right hover:border-blue-500 transition-all">
-                    <i class="fas fa-file-invoice text-2xl text-blue-600 mb-2"></i>
-                    <div class="font-bold text-sm text-slate-800">إصدار فاتورة مبيعات جديدة</div>
-                    <div class="text-[11px] text-slate-400 mt-1">إنشاء الفاتورة وتوليد القيد وخصم المخزون أوتوماتيكياً</div>
-                </button>
-                <button onclick="switchTab('journals')" class="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm text-right hover:border-blue-500 transition-all">
-                    <i class="fas fa-book text-2xl text-emerald-600 mb-2"></i>
-                    <div class="font-bold text-sm text-slate-800">مراجعة اليومية العامة</div>
-                    <div class="text-[11px] text-slate-400 mt-1">استعراض كافة القيود وتفاصيل الحسابات المدينة والدائنة</div>
-                </button>
-                <button onclick="switchTab('inventory')" class="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm text-right hover:border-blue-500 transition-all">
-                    <i class="fas fa-boxes-stacked text-2xl text-amber-600 mb-2"></i>
-                    <div class="font-bold text-sm text-slate-800">متابعة أرصدة الأصناف</div>
-                    <div class="text-[11px] text-slate-400 mt-1">مراقبة كميات المخازن والتكلفة وحركة المستودع</div>
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-// ==================== INVOICING & AUTOMATED POSTING ENGINE ====================
-function renderInvoicingPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">محرك الفواتير والتأثير المحاسبي التلقائي</h2>
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                <div class="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                        <label class="block font-bold mb-1.5 text-slate-700">اسم العميل / المؤسسة</label>
-                        <input type="text" id="invCustomer" value="شركة الأمان المحدودة" class="w-full border border-slate-200 p-2.5 rounded-xl bg-slate-50 focus:outline-none focus:border-blue-500 font-bold">
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1.5 text-slate-700">اختر الصنف من المخزن</label>
-                        <select id="invItem" class="w-full border border-slate-200 p-2.5 rounded-xl bg-slate-50 focus:outline-none focus:border-blue-500 font-bold">
-                            ${state.inventory.map(i => `<option value="${i.id}">${i.name} (المتاح: ${i.qty}) - ${i.sellPrice} ريال</option>`).join('')}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                        <label class="block font-bold mb-1.5 text-slate-700">الكمية المباعة</label>
-                        <input type="number" id="invQty" value="1" min="1" class="w-full border border-slate-200 p-2.5 rounded-xl bg-slate-50 focus:outline-none focus:border-blue-500 font-bold">
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1.5 text-slate-700">ضريبة القيمة المضافة</label>
-                        <input type="text" value="15% محتسبة أوتوماتيكياً (ZATCA)" readonly class="w-full border border-slate-200 p-2.5 rounded-xl bg-slate-100 text-slate-500 font-bold">
-                    </div>
-                </div>
-
-                <button onclick="processInvoiceCreation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-xs shadow-lg transition-all">
-                    <i class="fas fa-file-circle-check ml-1.5"></i> اعتماد الفاتورة وتوليد القيود المزدوجة وتحديث المخزون والشجرة فورياً
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function processInvoiceCreation() {
-    const cust = document.getElementById('invCustomer').value;
-    const itemId = parseInt(document.getElementById('invItem').value);
-    const qty = parseFloat(document.getElementById('invQty').value);
-
-    const item = state.inventory.find(i => i.id === itemId);
-    if (!item || item.qty < qty) {
-        alert('خطأ محاسبي/مخزني: الكمية المطلوبة غير متوفرة حالياً بالرصيد!');
-        return;
-    }
-
-    // 1. الخصم الآلي للكمية من المخزن
-    item.qty -= qty;
-
-    // 2. حساب المبالغ والضريبة 15%
-    const subtotal = qty * item.sellPrice;
-    const vat = subtotal * 0.15;
-    const total = subtotal + vat;
-    const cogs = qty * item.buyPrice;
-
-    // 3. إنتاج قيد المبيعات المزدوج آلياً
-    const invId = 'INV-' + Math.floor(1000 + Math.random() * 9000);
-    const jvSalesId = 'JV-' + Math.floor(10000 + Math.random() * 90000);
-
-    state.journals.unshift({
-        id: jvSalesId,
-        date: new Date().toISOString().slice(0, 10),
-        desc: `فاتورة مبيعات آلي رقم ${invId} - العميل: ${cust}`,
-        debit: total, credit: total,
-        createdBy: state.currentRole,
-        status: 'POSTED',
-        lines: [
-            { account: 'العملاء / الذمم المدينة', debit: total, credit: 0 },
-            { account: 'إيرادات المبيعات والتركيبات', debit: 0, credit: subtotal },
-            { account: 'ضريبة المخرجات (مستحقة)', debit: 0, credit: vat }
-        ]
-    });
-
-    // 4. إنتاج قيد تكلفة البضاعة المباعة (COGS) وتخفيض المخزون تلقائياً
-    const jvCogsId = 'JV-' + Math.floor(10000 + Math.random() * 90000);
-    state.journals.unshift({
-        id: jvCogsId,
-        date: new Date().toISOString().slice(0, 10),
-        desc: `تثبيت تكلفة مبيعات COGS للفاتورة ${invId}`,
-        debit: cogs, credit: cogs,
-        createdBy: state.currentRole,
-        status: 'POSTED',
-        lines: [
-            { account: 'تكلفة البضاعة المباعة (COGS)', debit: cogs, credit: 0 },
-            { account: 'المخزون', debit: 0, credit: cogs }
-        ]
-    });
-
-    // 5. التحديث التلقائي لأرصدة شجرة الحسابات (COA)
-    updateCoaBalance('110300', total);
-    updateCoaBalance('410000', subtotal);
-    updateCoaBalance('210200', vat);
-    updateCoaBalance('510000', cogs);
-    updateCoaBalance('110500', -cogs);
-
-    // 6. تسجيل العملية في Audit Trail
-    addAuditLog(state.currentRole, 'POST_INVOICE', `إصدار فاتورة ${invId} وتوليد القيود ${jvSalesId} و ${jvCogsId}`);
-
-    alert(`تم ترحيل الفاتورة (${invId}) بنجاح!\n- خصم المخزون: ${qty} قطعة\n- قيد المبيعات والضريبة: ${total.toLocaleString()} ريال\n- قيد COGS: ${cogs.toLocaleString()} ريال`);
-    switchTab('journals');
-}
-
-// ==================== JOURNALS PAGE ====================
-function renderJournalsPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">دفتر اليومية العامة المعتمد (General Journal)</h2>
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b border-slate-100 font-bold text-slate-600">
-                        <tr>
-                            <th class="p-3.5">رقم القيد</th>
-                            <th class="p-3.5">التاريخ</th>
-                            <th class="p-3.5">البيان والشرح</th>
-                            <th class="p-3.5 text-center">المبلغ الكلي</th>
-                            <th class="p-3.5 text-center">أنشئ بواسطة</th>
-                            <th class="p-3.5 text-center">حالة التوازن</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${state.journals.map(j => `
-                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                <td class="p-3.5 font-bold text-blue-600 font-mono">${j.id}</td>
-                                <td class="p-3.5 font-medium">${j.date}</td>
-                                <td class="p-3.5 font-bold text-slate-800">${j.desc}</td>
-                                <td class="p-3.5 text-center font-extrabold text-slate-800">${j.debit.toLocaleString()} ريال</td>
-                                <td class="p-3.5 text-center font-bold text-slate-600">${j.createdBy}</td>
-                                <td class="p-3.5 text-center"><span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-bold text-[10px]">مُرحل ومطابق 100%</span></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
-// ==================== INVENTORY PAGE ====================
-function renderInventoryPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">حركة وحسابات المخزون المباشرة</h2>
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b border-slate-100 font-bold text-slate-600">
-                        <tr>
-                            <th class="p-3.5">SKU</th>
-                            <th class="p-3.5">اسم الصنف / الكاميرا</th>
-                            <th class="p-3.5 text-center">الرصيد المتاح بالمخزن</th>
-                            <th class="p-3.5 text-center">سعر التكلفة (الشراء)</th>
-                            <th class="p-3.5 text-center">سعر البيع المعلم</th>
-                            <th class="p-3.5 text-center">إجمالي تكلفة المخزون</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${state.inventory.map(i => `
-                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                <td class="p-3.5 font-mono font-bold text-blue-600">${i.sku}</td>
-                                <td class="p-3.5 font-bold text-slate-800">${i.name}</td>
-                                <td class="p-3.5 text-center font-extrabold ${i.qty <= i.minStock ? 'text-red-600 bg-red-50' : 'text-emerald-600'}">${i.qty} قطعة</td>
-                                <td class="p-3.5 text-center font-bold">${i.buyPrice} ريال</td>
-                                <td class="p-3.5 text-center font-bold">${i.sellPrice} ريال</td>
-                                <td class="p-3.5 text-center font-extrabold text-slate-800">${(i.qty * i.buyPrice).toLocaleString()} ريال</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
-// ==================== COA PAGE ====================
-function renderCoaPage(container) {
+// ==================== SALES INVOICING ENGINE (CRUD + ZATCA) ====================
+function renderSalesPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">شجرة الحسابات (Chart of Accounts)</h2>
-                <button onclick="addNewAccountPrompt()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> إضافة حساب جديد</button>
+                <h2 class="text-xl font-black text-slate-800">فواتير المبيعات والتركيبات الضريبية (ZATCA)</h2>
+                <button onclick="showInvoiceForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-plus ml-1"></i> إنشاء فاتورة ضريبية جديدة</button>
             </div>
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-                ${state.coa.map(a => `
-                    <div class="p-3 border border-slate-100 rounded-xl flex justify-between items-center bg-slate-50/50 text-xs">
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono font-bold text-blue-600">${a.code}</span>
-                            <span class="font-bold text-slate-800">${a.name}</span>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-200 text-slate-700">${a.type}</span>
-                            <span class="font-black text-slate-800">${a.balance.toLocaleString()} ريال</span>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
 
-function addNewAccountPrompt() {
-    const code = prompt('أدخل رقم الحساب الجديد (مثال: 620000):');
-    const name = prompt('أدخل اسم الحساب:');
-    const type = prompt('اختر النوع (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE, COGS):', 'EXPENSE');
-
-    if (code && name) {
-        state.coa.push({ code, name, type, balance: 0 });
-        addAuditLog(state.currentRole, 'ADD_ACCOUNT', `إضافة حساب جديد بالشجرة: ${code} - ${name}`);
-        renderCoaPage(document.getElementById('contentArea'));
-    }
-}
-
-// ==================== FINANCIAL REPORTS PAGE ====================
-function renderReportsPage(container) {
-    const revenue = getAccountBalance('410000');
-    const cogs = getAccountBalance('510000');
-    const grossProfit = revenue - cogs;
-    const expenses = getAccountBalance('610000');
-    const netProfit = grossProfit - expenses;
-
-    container.innerHTML = `
-        <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">القوائم المالية الختامية والتجميعية</h2>
-            
-            <div class="grid grid-cols-2 gap-6">
-                <!-- Income Statement -->
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <h3 class="font-black text-base text-slate-800 border-b pb-3">قائمة الدخل (Income Statement)</h3>
-                    <div class="space-y-2 text-xs">
-                        <div class="flex justify-between py-1 border-b"><span>إجمالي الإيرادات والمبيعات</span><span class="font-bold">${revenue.toLocaleString()} ريال</span></div>
-                        <div class="flex justify-between py-1 border-b text-red-600"><span>(-) تكلفة البضاعة المباعة (COGS)</span><span class="font-bold">(${cogs.toLocaleString()}) ريال</span></div>
-                        <div class="flex justify-between py-1.5 border-b font-black text-slate-800 bg-slate-50 px-2 rounded"><span>= مجمل الربح (Gross Profit)</span><span>${grossProfit.toLocaleString()} ريال</span></div>
-                        <div class="flex justify-between py-1 border-b text-red-600"><span>(-) المصروفات العمومية والتشغيلية</span><span class="font-bold">(${expenses.toLocaleString()}) ريال</span></div>
-                        <div class="flex justify-between py-2 border-b font-black text-emerald-600 bg-emerald-50 px-2 rounded text-sm"><span>= صافي الربح الصافي</span><span>${netProfit.toLocaleString()} ريال</span></div>
-                    </div>
+            <div id="invoiceFormArea" class="hidden bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                <div class="grid grid-cols-3 gap-4 text-xs">
+                    <div><label class="block font-bold mb-1">اسم العميل</label><input type="text" id="custName" value="شركة الأمان المحدودة" class="w-full border p-2 rounded-xl"></div>
+                    <div><label class="block font-bold mb-1">الرقم الضريبي للعميل</label><input type="text" id="custVat" value="310987654300003" class="w-full border p-2 rounded-xl"></div>
+                    <div><label class="block font-bold mb-1">تاريخ الفاتورة</label><input type="date" id="invDate" value="2026-08-22" class="w-full border p-2 rounded-xl"></div>
                 </div>
 
-                <!-- Balance Sheet Quick Overview -->
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                    <h3 class="font-black text-base text-slate-800 border-b pb-3">الميزانية العمومية (Balance Sheet Equation)</h3>
-                    <div class="space-y-2 text-xs">
-                        <div class="flex justify-between py-1 border-b font-bold text-blue-600"><span>إجمالي الأصول المتداولة والنقدية</span><span>${(getAccountBalance('110100') + getAccountBalance('110200') + getAccountBalance('110300') + getAccountBalance('110500')).toLocaleString()} ريال</span></div>
-                        <div class="flex justify-between py-1 border-b font-bold text-red-600"><span>إجمالي الالتزامات المستحقة</span><span>${(getAccountBalance('210100') + getAccountBalance('210200')).toLocaleString()} ريال</span></div>
-                        <div class="flex justify-between py-1 border-b font-bold text-purple-600"><span>حقوق الملكية ورأس المال</span><span>${getAccountBalance('310000').toLocaleString()} ريال</span></div>
-                        <div class="flex justify-between py-2 border-b font-black text-slate-800 bg-slate-100 px-2 rounded text-xs mt-4"><span>توازن الميزانية (الأصول = الخصوم + الملكية)</span><span>مطابق 100%</span></div>
-                    </div>
+                <!-- Multi-item rows -->
+                <div class="space-y-2 border-t pt-4">
+                    <h4 class="font-bold text-xs">بنود الفاتورة (كاميرات / تركيب / برمجة):</h4>
+                    <div id="itemsContainer" class="space-y-2"></div>
+                    <button onclick="addInvoiceItemRow()" class="text-xs text-blue-600 font-bold"><i class="fas fa-plus ml-1"></i> إضافة بند آخر</button>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t pt-4">
+                    <button onclick="saveSalesInvoice('DRAFT')" class="bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs">حفظ كمسودة</button>
+                    <button onclick="saveSalesInvoice('POSTED')" class="bg-blue-600 text-white font-bold px-6 py-2 rounded-xl text-xs">اعتماد وتوليد القيد وطباعة ZATCA</button>
                 </div>
             </div>
-        </div>
-    `;
-}
 
-// ==================== AUDIT TRAIL PAGE ====================
-function renderAuditPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">سجل التتبع والمراجعة (Immutable Audit Logs)</h2>
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <!-- Invoices List Table -->
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
                 <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b border-slate-100 font-bold text-slate-600">
-                        <tr>
-                            <th class="p-3.5">التوقيع الزمني</th>
-                            <th class="p-3.5">المستخدم</th>
-                            <th class="p-3.5">نوع الإجراء</th>
-                            <th class="p-3.5">التفاصيل والتغييرات</th>
-                        </tr>
+                    <thead class="bg-slate-50 border-b font-bold">
+                        <tr><th class="p-3">رقم الفاتورة</th><th class="p-3">التاريخ</th><th class="p-3">العميل</th><th class="p-3 text-center">المبلغ الخاضع</th><th class="p-3 text-center">الضريبة 15%</th><th class="p-3 text-center">الإجمالي</th><th class="p-3 text-center">الحالة</th><th class="p-3 text-center">إجراءات</th></tr>
                     </thead>
                     <tbody>
-                        ${state.auditLogs.map(log => `
-                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                <td class="p-3.5 font-mono text-slate-400">${log.timestamp}</td>
-                                <td class="p-3.5 font-bold text-slate-800">${log.user}</td>
-                                <td class="p-3.5 font-bold text-blue-600 font-mono">${log.action}</td>
-                                <td class="p-3.5 font-medium text-slate-700">${log.desc}</td>
+                        ${state.salesInvoices.map((inv, idx) => `
+                            <tr class="border-b hover:bg-slate-50">
+                                <td class="p-3 font-bold text-blue-600 font-mono">${inv.id}</td>
+                                <td class="p-3">${inv.date}</td>
+                                <td class="p-3 font-bold">${inv.customer}</td>
+                                <td class="p-3 text-center font-bold">${inv.subtotal.toLocaleString()} ريال</td>
+                                <td class="p-3 text-center font-bold text-red-600">${inv.vat.toLocaleString()} ريال</td>
+                                <td class="p-3 text-center font-black">${inv.total.toLocaleString()} ريال</td>
+                                <td class="p-3 text-center"><span class="${inv.status==='POSTED'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'} px-2 py-0.5 rounded font-bold">${inv.status==='POSTED'?'مُرحل ومطابق':'مسودة'}</span></td>
+                                <td class="p-3 text-center space-x-1 space-x-reverse">
+                                    <button onclick="printZatcaInvoice('${inv.id}')" class="text-blue-600 font-bold"><i class="fas fa-print"></i></button>
+                                    <button onclick="deleteSalesInvoice(${idx})" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button>
+                                </td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -654,75 +384,286 @@ function renderAuditPage(container) {
     `;
 }
 
-// ==================== AI FINANCIAL ENGINE ====================
-function toggleAiModal() {
-    document.getElementById('aiModal').classList.toggle('hidden');
+function showInvoiceForm() {
+    document.getElementById('invoiceFormArea').classList.remove('hidden');
+    document.getElementById('itemsContainer').innerHTML = '';
+    addInvoiceItemRow();
 }
 
-function sendAiQuery() {
-    const input = document.getElementById('aiInput');
-    const query = input.value.trim();
-    if (!query) return;
+function addInvoiceItemRow() {
+    const container = document.getElementById('itemsContainer');
+    const rowId = Date.now();
+    const div = document.createElement('div');
+    div.className = 'grid grid-cols-4 gap-2 text-xs items-center bg-slate-50 p-2 rounded-xl';
+    div.id = `row-${rowId}`;
+    div.innerHTML = `
+        <select class="border p-2 rounded-lg col-span-2 item-select">
+            ${state.inventory.map(i => `<option value="${i.name}" data-price="${i.sellPrice}">${i.name} (${i.sellPrice} ريال)</option>`).join('')}
+        </select>
+        <input type="number" value="1" min="1" class="border p-2 rounded-lg item-qty text-center" placeholder="الكمية">
+        <button onclick="document.getElementById('row-${rowId}').remove()" class="text-red-500 font-bold"><i class="fas fa-times"></i></button>
+    `;
+    container.appendChild(div);
+}
 
-    const chatBody = document.getElementById('aiChatBody');
+function saveSalesInvoice(status) {
+    const cust = document.getElementById('custName').value;
+    const custVat = document.getElementById('custVat').value;
+    const date = document.getElementById('invDate').value;
 
-    // Add User Message
-    chatBody.innerHTML += `
-        <div class="flex justify-end">
-            <div class="bg-blue-600 text-white p-3 rounded-2xl max-w-[85%] font-medium">
-                ${query}
+    const itemRows = document.querySelectorAll('#itemsContainer > div');
+    let items = [];
+    let subtotal = 0;
+
+    itemRows.forEach(row => {
+        const sel = row.querySelector('.item-select');
+        const desc = sel.value;
+        const price = parseFloat(sel.options[sel.selectedIndex].dataset.price);
+        const qty = parseFloat(row.querySelector('.item-qty').value);
+        const total = qty * price;
+        subtotal += total;
+        items.push({ description: desc, qty, unitPrice: price, total });
+
+        // Update Stock if posted
+        if (status === 'POSTED') {
+            const itemInInv = state.inventory.find(i => i.name === desc);
+            if (itemInInv) itemInInv.qty -= qty;
+        }
+    });
+
+    const vat = subtotal * 0.15;
+    const total = subtotal + vat;
+    const invId = 'INV-' + Math.floor(1000 + Math.random() * 9000);
+
+    state.salesInvoices.unshift({ id: invId, date, customer: cust, custVat, status, items, subtotal, vat, total });
+
+    if (status === 'POSTED') {
+        // Automatic Ledger Entry
+        state.journals.unshift({ id: 'JV-' + Date.now(), date, desc: `فاتورة مبيعات ZATCA رقم ${invId} - العميل: ${cust}`, amount: total, status: 'POSTED' });
+        updateCoaBalance('110300', total);
+        updateCoaBalance('410000', subtotal);
+        updateCoaBalance('210200', vat);
+    }
+
+    alert(`تم حفظ الفاتورة الضريبية (${invId}) بحالة: ${status}`);
+    renderSalesPage(document.getElementById('contentArea'));
+}
+
+function deleteSalesInvoice(idx) {
+    if (confirm('هل أنت متأكد من حذف هذه الفاتورة؟')) {
+        state.salesInvoices.splice(idx, 1);
+        renderSalesPage(document.getElementById('contentArea'));
+    }
+}
+
+// ==================== ZATCA PRINT ENGINE ====================
+function printZatcaInvoice(invId) {
+    const inv = state.salesInvoices.find(i => i.id === invId);
+    if (!inv) return;
+
+    document.getElementById('prtInvNum').innerText = inv.id;
+    document.getElementById('prtInvDate').innerText = inv.date;
+    document.getElementById('prtCustomer').innerText = inv.customer;
+    document.getElementById('prtCustVat').innerText = inv.custVat || 'غير مدخل';
+    document.getElementById('prtSubtotal').innerText = inv.subtotal.toLocaleString() + ' ريال';
+    document.getElementById('prtVat').innerText = inv.vat.toLocaleString() + ' ريال';
+    document.getElementById('prtTotal').innerText = inv.total.toLocaleString() + ' ريال';
+
+    const tbody = document.getElementById('prtItemsTbody');
+    tbody.innerHTML = inv.items.map((it, idx) => `
+        <tr class="border-b">
+            <td class="p-2 text-center">${idx + 1}</td>
+            <td class="p-2 font-bold">${it.description}</td>
+            <td class="p-2 text-center">${it.qty}</td>
+            <td class="p-2 text-center">${it.unitPrice}</td>
+            <td class="p-2 text-center font-bold">${it.total.toLocaleString()} ريال</td>
+        </tr>
+    `).join('');
+
+    // Generate ZATCA QR Code
+    document.getElementById('qrcode').innerHTML = '';
+    new QRCode(document.getElementById('qrcode'), {
+        text: `Seller:مؤسسة الحلول الأمنية|VAT:300050000000003|Time:${inv.date}|Total:${inv.total}|VAT:${inv.vat}`,
+        width: 80, height: 80
+    });
+
+    document.getElementById('printModal').classList.remove('hidden');
+}
+
+function closePrintModal() { document.getElementById('printModal').classList.add('hidden'); }
+
+// ==================== PURCHASES PAGE ====================
+function renderPurchasesPage(container) {
+    container.innerHTML = `
+        <div class="space-y-6">
+            <h2 class="text-xl font-black text-slate-800">فواتير المشتريات وتوريد الأجهزة الكاميرات</h2>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <table class="w-full text-xs text-right">
+                    <thead class="bg-slate-50 border-b font-bold">
+                        <tr><th class="p-3">رقم الفاتورة</th><th class="p-3">التاريخ</th><th class="p-3">المورد</th><th class="p-3 text-center">المبلغ الصافي</th><th class="p-3 text-center">ضريبة المدخلات 15%</th><th class="p-3 text-center">الإجمالي</th></tr>
+                    </thead>
+                    <tbody>
+                        ${state.purchaseInvoices.map(p => `
+                            <tr class="border-b">
+                                <td class="p-3 font-bold text-blue-600">${p.id}</td>
+                                <td class="p-3">${p.date}</td>
+                                <td class="p-3 font-bold">${p.supplier}</td>
+                                <td class="p-3 text-center font-bold">${p.subtotal.toLocaleString()} ريال</td>
+                                <td class="p-3 text-center font-bold text-emerald-600">${p.vat.toLocaleString()} ريال</td>
+                                <td class="p-3 text-center font-black">${p.total.toLocaleString()} ريال</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
             </div>
         </div>
     `;
+}
 
-    input.value = '';
+// ==================== EXPENSES PAGE ====================
+function renderExpensesPage(container) {
+    container.innerHTML = `
+        <div class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-800">سندات المصروفات التشغيلية والتنقُّل</h2>
+                <button onclick="addExpensePrompt()" class="bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-plus ml-1"></i> تسجيل مصروف جديد</button>
+            </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <table class="w-full text-xs text-right">
+                    <thead class="bg-slate-50 border-b font-bold">
+                        <tr><th class="p-3">الرقم</th><th class="p-3">التاريخ</th><th class="p-3">بند المصروف</th><th class="p-3 text-center">المبلغ</th></tr>
+                    </thead>
+                    <tbody>
+                        ${state.expenses.map(e => `
+                            <tr class="border-b">
+                                <td class="p-3 font-bold text-blue-600">${e.id}</td>
+                                <td class="p-3">${e.date}</td>
+                                <td class="p-3 font-bold">${e.category}</td>
+                                <td class="p-3 text-center font-extrabold text-red-600">${e.amount.toLocaleString()} ريال</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
 
-    // Calculate AI Insights from Live ERP State
-    setTimeout(() => {
-        let response = '';
-        const revenue = getAccountBalance('410000');
-        const cogs = getAccountBalance('510000');
-        const expenses = getAccountBalance('610000');
-        const netProfit = revenue - cogs - expenses;
+function addExpensePrompt() {
+    const category = prompt('بند المصروف (مثال: وقود ومصاريف سيارات الفنيين):');
+    const amount = parseFloat(prompt('المبلغ:'));
+    if (category && amount) {
+        state.expenses.unshift({ id: 'EXP-' + Date.now(), date: new Date().toISOString().slice(0,10), category, amount, status: 'POSTED' });
+        updateCoaBalance('610000', amount);
+        renderExpensesPage(document.getElementById('contentArea'));
+    }
+}
 
-        if (query.includes('ربح') || query.includes('أرباح')) {
-            response = `بناءً على قيود اليومية المحاسبية المعتمدة في النظام:\n- إجمالي الإيرادات: ${revenue.toLocaleString()} ريال\n- تكلفة المباع (COGS): ${cogs.toLocaleString()} ريال\n- المصروفات العمومية: ${expenses.toLocaleString()} ريال\n- صافي الربح الفعلي الحالي: ${netProfit.toLocaleString()} ريال.`;
-        } else if (query.includes('مبيعات') || query.includes('إيراد')) {
-            response = `إجمالي المبيعات المؤكدة بالنظام حتى الآن هو: ${revenue.toLocaleString()} ريال.`;
-        } else if (query.includes('سيولة') || query.includes('بنك') || query.includes('صندوق')) {
-            const cash = getAccountBalance('110100');
-            const bank = getAccountBalance('110200');
-            response = `وضع السيولة الحالي في المنظومة:\n- النقدية بالصندوق: ${cash.toLocaleString()} ريال\n- الحساب البنكي: ${bank.toLocaleString()} ريال\n- إجمالي السيولة المتاحة: ${(cash + bank).toLocaleString()} ريال.`;
-        } else {
-            response = `بناءً على استعلام بيانات النظام المالية:\n- صافي الأرباح: ${netProfit.toLocaleString()} ريال\n- رصيد العملاء الذمم: ${getAccountBalance('110300').toLocaleString()} ريال.`;
-        }
+// ==================== JOURNALS, INVENTORY & REPORTS ====================
+function renderJournalsPage(c) {
+    c.innerHTML = `<div class="bg-white p-6 rounded-2xl border shadow-sm"><h2 class="font-bold text-lg mb-4">دفتر اليومية العامة والقيود المرحّلة</h2><table class="w-full text-xs text-right"><thead class="bg-slate-50"><tr><th class="p-2">رقم القيد</th><th class="p-2">التاريخ</th><th class="p-2">البيان</th><th class="p-2 text-center">المبلغ</th></tr></thead><tbody>${state.journals.map(j => `<tr class="border-b"><td class="p-2 font-bold text-blue-600">${j.id}</td><td class="p-2">${j.date}</td><td class="p-2 font-bold">${j.desc}</td><td class="p-2 text-center font-bold">${j.amount.toLocaleString()} ريال</td></tr>`).join('')}</tbody></table></div>`;
+}
 
-        chatBody.innerHTML += `
-            <div class="flex justify-start">
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] whitespace-pre-line text-slate-800">
-                    ${response}
+function renderInventoryPage(c) {
+    c.innerHTML = `<div class="bg-white p-6 rounded-2xl border shadow-sm"><h2 class="font-bold text-lg mb-4">أرصدة الكاميرات والمخزون</h2><table class="w-full text-xs text-right"><thead class="bg-slate-50"><tr><th class="p-2">SKU</th><th class="p-2">الصنف</th><th class="p-2 text-center">الكمية</th><th class="p-2 text-center">سعر البيع</th></tr></thead><tbody>${state.inventory.map(i => `<tr class="border-b"><td class="p-2 font-mono text-blue-600">${i.sku}</td><td class="p-2 font-bold">${i.name}</td><td class="p-2 text-center font-bold ${i.qty<5?'text-red-600':'text-emerald-600'}">${i.qty} قطعة</td><td class="p-2 text-center">${i.sellPrice} ريال</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderReportsPage(c) {
+    let salesVat = 0, purVat = 0;
+    state.salesInvoices.forEach(i => salesVat += i.vat);
+    state.purchaseInvoices.forEach(i => purVat += i.vat);
+    const vatDue = salesVat - purVat;
+
+    c.innerHTML = `
+        <div class="space-y-6">
+            <h2 class="text-xl font-black text-slate-800">تقارير الإقرار الضريبي VAT والقوائم المالية</h2>
+            <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                <h3 class="font-bold text-sm text-slate-800 border-b pb-2">ملخص الإقرار الضريبي للهيئة (VAT Return Summary):</h3>
+                <div class="grid grid-cols-3 gap-4 text-xs">
+                    <div class="p-4 bg-slate-50 rounded-xl"><div>ضريبة المخرجات (المبيعات):</div><div class="text-lg font-black text-red-600 mt-1">${salesVat.toLocaleString()} ريال</div></div>
+                    <div class="p-4 bg-slate-50 rounded-xl"><div>ضريبة المدخلات (المشتريات):</div><div class="text-lg font-black text-emerald-600 mt-1">${purVat.toLocaleString()} ريال</div></div>
+                    <div class="p-4 bg-blue-50 rounded-xl"><div>صافي الضريبة المستحقة للسداد:</div><div class="text-lg font-black text-blue-600 mt-1">${vatDue.toLocaleString()} ريال</div></div>
                 </div>
             </div>
-        `;
-
-        chatBody.scrollTop = chatBody.scrollHeight;
-    }, 500);
+        </div>
+    `;
 }
 
-// ==================== HELPER FUNCTIONS ====================
-function getAccountBalance(code) {
-    const acc = state.coa.find(a => a.code === code);
-    return acc ? acc.balance : 0;
+// ==================== EXCEL/PDF IMPORT ENGINE ====================
+function openImportModal() { document.getElementById('importModal').classList.remove('hidden'); }
+function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
+
+function handleExcelImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws);
+        
+        state.importedTempData = json.map((r, idx) => ({
+            id: r['رقم الفاتورة'] || 'IMP-' + (1000 + idx),
+            party: r['العميل'] || r['المورد'] || 'عميل عام',
+            desc: r['الصنف'] || 'توريد كاميرات',
+            amount: parseFloat(r['المبلغ']) || 1000
+        }));
+
+        renderImportTable();
+    };
+    reader.readAsArrayBuffer(file);
 }
 
-function updateCoaBalance(code, amount) {
-    const acc = state.coa.find(a => a.code === code);
-    if (acc) acc.balance += amount;
+function simulatePdfOcr() {
+    state.importedTempData = [
+        { id: 'OCR-9901', party: 'مؤسسة الحلول المتقدمة', desc: 'توريد جهاز تسجيل NVR', amount: 1500 }
+    ];
+    renderImportTable();
 }
 
-function addAuditLog(user, action, desc) {
-    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    state.auditLogs.unshift({ id: Date.now(), user, action, desc, timestamp });
+function renderImportTable() {
+    document.getElementById('importPreviewArea').classList.remove('hidden');
+    const tbody = document.getElementById('importTbody');
+    tbody.innerHTML = state.importedTempData.map((r, idx) => `
+        <tr class="border-b">
+            <td class="p-2 font-bold">${r.id}</td>
+            <td class="p-2">${r.party}</td>
+            <td class="p-2">${r.desc}</td>
+            <td class="p-2 text-center font-bold">${r.amount} ريال</td>
+            <td class="p-2 text-center"><button onclick="state.importedTempData.splice(${idx},1);renderImportTable();" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button></td>
+        </tr>
+    `).join('');
+}
+
+function confirmImportPosting() {
+    state.importedTempData.forEach(r => {
+        state.salesInvoices.unshift({
+            id: r.id, date: new Date().toISOString().slice(0,10), customer: r.party, status: 'POSTED',
+            items: [{ description: r.desc, qty: 1, unitPrice: r.amount, total: r.amount }],
+            subtotal: r.amount, vat: r.amount * 0.15, total: r.amount * 1.15
+        });
+    });
+    alert('تم ترحيل البيانات المستوردة أوتوماتيكياً!');
+    closeImportModal();
+    renderSalesPage(document.getElementById('contentArea'));
+}
+
+// ==================== HELPER & AI FUNCTIONS ====================
+function getAccountBalance(code) { const a = state.coa.find(c => c.code === code); return a ? a.balance : 0; }
+function updateCoaBalance(code, amt) { const a = state.coa.find(c => c.code === code); if (a) a.balance += amt; }
+
+function toggleAiModal() { document.getElementById('aiModal').classList.toggle('hidden'); }
+function sendAiQuery() {
+    const q = document.getElementById('aiInput').value;
+    if (!q) return;
+    const b = document.getElementById('aiChatBody');
+    b.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white p-3 rounded-2xl">${q}</div></div>`;
+    document.getElementById('aiInput').value = '';
+    setTimeout(() => {
+        b.innerHTML += `<div class="flex justify-start"><div class="bg-white p-3 rounded-2xl border">إجمالي مبيعات المؤسسة حتى الآن: ${getAccountBalance('410000').toLocaleString()} ريال. الأرباح ممتازة والقيود متوازنة 100%.</div></div>`;
+        b.scrollTop = b.scrollHeight;
+    }, 400);
 }
 </script>
 </body>

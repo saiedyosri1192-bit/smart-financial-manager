@@ -148,8 +148,8 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/transactions', authenticateToken, async (req, res) => {
     try {
         const query = isPg 
-            ? 'SELECT id, type, description, amount::float, category, TO_CHAR(date, 'YYYY-MM-DD') as date FROM transactions WHERE user_id = $1 ORDER BY date DESC'
-            : 'SELECT id, type, description, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC';
+            ? "SELECT id, type, description, amount::float, category, TO_CHAR(date, 'YYYY-MM-DD') as date FROM transactions WHERE user_id = $1 ORDER BY date DESC"
+            : "SELECT id, type, description, amount, category, date FROM transactions WHERE user_id = $1 ORDER BY date DESC";
         const result = await dbQuery(query, [req.user.id]);
         res.json(result.rows);
     } catch (err) {

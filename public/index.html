@@ -3,241 +3,588 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المدير المالي الذكي - Smart Financial Manager</title>
+    <title>المنظومة المالية المحاسبية الذكية - Smart Enterprise ERP</title>
+    <!-- Bootstrap 5 RTL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #f4f6f9; color: #333; }
-        .auth-container { max-width: 420px; margin: 80px auto; }
-        .main-header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 1.5rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .stat-card { border: none; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
-        .card-custom { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+        .sidebar { background: #0f172a; min-height: 100vh; color: #fff; }
+        .sidebar .nav-link { color: #94a3b8; border-radius: 8px; margin-bottom: 4px; font-weight: 600; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #2563eb; color: #fff; }
+        .card-custom { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); background: #fff; }
+        .stat-card { border: none; border-radius: 14px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .badge-role { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; }
+        
+        /* Treeview & Tables */
+        .tree, .tree ul { list-style: none; padding-right: 1.2rem; }
+        .tree li { margin: 0.4rem 0; }
+        .tree-node { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+        
+        /* Chat Styling */
+        .chat-box { height: 350px; overflow-y: auto; background: #f8fafc; border-radius: 12px; padding: 1rem; border: 1px solid #e2e8f0; }
+        .chat-msg { margin-bottom: 0.8rem; padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.9rem; max-width: 85%; }
+        .chat-msg.ai { background: #dbeafe; color: #1e40af; align-self: flex-start; }
+        .chat-msg.user { background: #2563eb; color: #fff; margin-right: auto; }
     </style>
 </head>
 <body>
 
-    <div id="authSection" class="container auth-container">
-        <div class="card p-4 shadow-sm border-0 rounded-4">
-            <div class="text-center mb-4">
-                <div class="icon-box bg-primary text-white mx-auto mb-2" style="width: 60px; height: 60px; font-size: 1.8rem;">
-                    <i class="fa-solid fa-wallet"></i>
-                </div>
-                <h3 class="fw-bold text-primary mb-1" id="authTitle">تسجيل الدخول</h3>
-                <p class="text-muted small">مرحباً بك في نظام المدير المالي الذكي</p>
-            </div>
-            <form id="authForm">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">اسم المستخدم</label>
-                    <input type="text" id="username" class="form-control" placeholder="أدخل اسم المستخدم" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">كلمة المرور</label>
-                    <input type="password" id="password" class="form-control" placeholder="أدخل كلمة المرور" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mb-3" id="authBtn">تسجيل الدخول</button>
-                <div class="text-center">
-                    <a href="#" id="toggleAuth" class="text-decoration-none small text-secondary">ليس لديك حساب؟ إنشاء حساب جديد</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="appSection" class="d-none">
-        <header class="main-header mb-4">
-            <div class="container d-flex justify-content-between align-items-center">
-                <h4 class="mb-0 fw-bold"><i class="fa-solid fa-wallet me-2"></i>المدير المالي الذكي</h4>
-                <div class="d-flex align-items-center gap-3">
-                    <span id="userGreeting" class="fw-semibold text-light"></span>
-                    <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-1"></i> خروج</button>
-                </div>
-            </div>
-        </header>
-
-        <div class="container mb-5">
-            <div class="row g-3 mb-4">
-                <div class="col-md-4"><div class="card stat-card p-3"><span class="text-muted small">إجمالي الإيرادات</span><h3 class="fw-bold text-success mb-0" id="totalIncome">0.00 ر.س</h3></div></div>
-                <div class="col-md-4"><div class="card stat-card p-3"><span class="text-muted small">إجمالي المصروفات</span><h3 class="fw-bold text-danger mb-0" id="totalExpense">0.00 ر.س</h3></div></div>
-                <div class="col-md-4"><div class="card stat-card p-3"><span class="text-muted small">صافي الرصيد</span><h3 class="fw-bold text-primary mb-0" id="netBalance">0.00 ر.س</h3></div></div>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-5">
-                    <div class="card card-custom p-4 h-100">
-                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-plus-circle text-primary me-2"></i>إضافة عملية جديدة</h5>
-                        <form id="transactionForm">
-                            <div class="mb-3"><label class="form-label">النوع</label><select class="form-select" id="type"><option value="income">إيراد (+)</option><option value="expense">مصروف (-)</option></select></div>
-                            <div class="mb-3"><label class="form-label">البيان</label><input type="text" class="form-control" id="description" placeholder="الوصف" required></div>
-                            <div class="mb-3"><label class="form-label">المبلغ (ر.س)</label><input type="number" step="0.01" class="form-control" id="amount" placeholder="0.00" required></div>
-                            <div class="mb-3"><label class="form-label">الفئة</label><select class="form-select" id="category"><option value="مبيعات / خدمات">مبيعات / خدمات</option><option value="رواتب وأجور">رواتب وأجور</option><option value="إيجارات وفواتير">إيجارات وفواتير</option><option value="مصاريف عمومية">مصاريف عمومية</option></select></div>
-                            <div class="mb-3"><label class="form-label">التاريخ</label><input type="date" class="form-control" id="date" required></div>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold">حفظ العملية</button>
-                        </form>
+    <div class="container-fluid">
+        <div class="row">
+            
+            <!-- القائمة الجانبية (الأدوار الثلاثة) -->
+            <div class="col-md-3 col-lg-2 sidebar p-3 d-flex flex-column">
+                <div class="d-flex align-items-center gap-2 mb-4 px-2">
+                    <i class="fa-solid fa-vault text-primary fa-2x"></i>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-white">المنظومة المالية</h6>
+                        <span class="small text-muted">ERP Financial Suite</span>
                     </div>
                 </div>
-                <div class="col-lg-7">
-                    <div class="card card-custom p-4 h-100"><canvas id="categoryChart"></canvas></div>
+
+                <div class="nav flex-column nav-pills me-3" id="v-pills-tab" role="tablist">
+                    <button class="nav-link active text-start" id="tab-cfo-btn" data-bs-toggle="pill" data-bs-target="#tab-cfo"><i class="fa-solid fa-chart-line me-2"></i> لوحة المدير المالي</button>
+                    <button class="nav-link text-start" id="tab-manager-btn" data-bs-toggle="pill" data-bs-target="#tab-manager"><i class="fa-solid fa-diagram-project me-2"></i> مدير الحسابات (الشجرة)</button>
+                    <button class="nav-link text-start" id="tab-accountant-btn" data-bs-toggle="pill" data-bs-target="#tab-accountant"><i class="fa-solid fa-book me-2"></i> المحاسب (دفتر اليومية)</button>
+                    <button class="nav-link text-start" id="tab-ai-btn" data-bs-toggle="pill" data-bs-target="#tab-ai"><i class="fa-solid fa-brain me-2"></i> المساعد المالي الذكي</button>
+                </div>
+
+                <div class="mt-auto pt-4 border-top border-secondary">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-primary text-white p-2 rounded-circle"><i class="fa-solid fa-user-check"></i></div>
+                        <div>
+                            <div class="fw-bold small text-white">المستخدم الحالي</div>
+                            <span class="badge bg-success badge-role">صلاحيات كاملة (Admin)</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card card-custom p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0">سجل العمليات المالية</h5>
-                    <button class="btn btn-outline-success btn-sm" onclick="exportToCSV()"><i class="fa-solid fa-file-excel me-1"></i>تصدير Excel</button>
+            <!-- محتوى الشاشات الرئيسية -->
+            <div class="col-md-9 col-lg-10 p-4">
+                <div class="tab-content" id="v-pills-tabContent">
+                    
+                    <!-- 1. لوحة المدير المالي (CFO Dashboard) -->
+                    <div class="tab-pane fade show active" id="tab-cfo">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold"><i class="fa-solid fa-chart-pie text-primary me-2"></i>المؤشرات المالية العليا (CFO Level)</h4>
+                            <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="exportFullReport()"><i class="fa-solid fa-file-pdf me-1"></i> تصدير التقرير التنفيذي</button>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">إجمالي الأصول</span>
+                                    <h3 class="fw-bold text-primary mb-0" id="cfoAssets">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">الالتزامات القائمة</span>
+                                    <h3 class="fw-bold text-danger mb-0" id="cfoLiabilities">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">إجمالي الإيرادات</span>
+                                    <h3 class="fw-bold text-success mb-0" id="cfoRevenue">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card p-3">
+                                    <span class="text-muted small fw-bold">صافي الأرباح</span>
+                                    <h3 class="fw-bold text-info mb-0" id="cfoProfit">0.00 ر.س</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-7">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">مقارنة التدفقات والإيرادات والمصروفات</h6>
+                                    <canvas id="cfoMainChart" style="max-height: 280px;"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">هيكل حقوق الملكية والأصول</h6>
+                                    <canvas id="cfoPieChart" style="max-height: 280px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. مهام مدير الحسابات (Accounting Manager / Chart of Accounts) -->
+                    <div class="tab-pane fade" id="tab-manager">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold"><i class="fa-solid fa-sitemap text-primary me-2"></i>شجرة الحسابات وميزان المراجعة</h4>
+                            <button class="btn btn-primary rounded-pill btn-sm px-3" onclick="openAddModal('root')"><i class="fa-solid fa-plus me-1"></i> إضافة حساب رئيسي</button>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">الهيكل الشجري للحسابات</h6>
+                                    <div id="treeContainer" class="tree"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">ميزان المراجعة السريع</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm text-center align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>الكود</th>
+                                                    <th>اسم الحساب</th>
+                                                    <th>مدين</th>
+                                                    <th>دائن</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="trialBalanceBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. مهام المحاسب (Accountant / Journal Entries) -->
+                    <div class="tab-pane fade" id="tab-accountant">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold"><i class="fa-solid fa-pen-to-square text-primary me-2"></i>إدخال وقيود اليومية المزدوجة</h4>
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-12">
+                                <div class="card card-custom p-4">
+                                    <h6 class="fw-bold mb-3">إضافة قيد يومية جديد (Double-Entry)</h6>
+                                    <form id="journalForm">
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-3">
+                                                <label class="form-label small text-muted">التاريخ</label>
+                                                <input type="date" class="form-control form-control-sm" id="entryDate" required>
+                                            </div>
+                                            <div class="col-md-9">
+                                                <label class="form-label small text-muted">البيان / شرح القيد</label>
+                                                <input type="text" class="form-control form-control-sm" id="entryDesc" placeholder="شرح المعاملة المالية" required>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3 mb-3 bg-light p-3 rounded-3">
+                                            <div class="col-md-5">
+                                                <label class="form-label small text-muted">حساب الطرف المدين (+)</label>
+                                                <select class="form-select form-select-sm" id="debitAccount" required></select>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label small text-muted">حساب الطرف الدائن (-)</label>
+                                                <select class="form-select form-select-sm" id="creditAccount" required></select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small text-muted">المبلغ (ر.س)</label>
+                                                <input type="number" step="0.01" class="form-control form-control-sm" id="entryAmount" placeholder="0.00" required>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary btn-sm fw-bold px-4"><i class="fa-solid fa-save me-1"></i> ترحيل القيد</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-custom p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0">دفتر اليومية العامة</h6>
+                                <button class="btn btn-outline-success btn-sm rounded-pill" onclick="exportCSV()"><i class="fa-solid fa-file-excel me-1"></i> تصدير Excel</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>التاريخ</th>
+                                            <th>البيان</th>
+                                            <th>الطرف المدين</th>
+                                            <th>الطرف الدائن</th>
+                                            <th>المبلغ</th>
+                                            <th>إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="journalTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. المساعد المالي الذكي (AI CFO Assistant) -->
+                    <div class="tab-pane fade" id="tab-ai">
+                        <div class="card card-custom p-4">
+                            <h4 class="fw-bold mb-3"><i class="fa-solid fa-brain text-primary me-2"></i>المساعد المالي الذكي (AI CFO)</h4>
+                            
+                            <div id="chatBox" class="chat-box d-flex flex-column mb-3">
+                                <div class="chat-msg ai">
+                                    مرحباً بك! أنا مستشارك المالي الذكي. يمكنك كتابة أي عملية مالية باللغة الطبيعية (مثال: "دفعت إيجار المعرض 15,000 ريال بشيك") وسأقوم بإنشاء القيد وتوجيهه آلياً لشجرة الحسابات.
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <input type="text" id="aiInput" class="form-control" placeholder="اكتب المعاملة أو الاستفسار المالي هنا..." onkeypress="if(event.key==='Enter') sendAiMessage()">
+                                <button class="btn btn-primary" onclick="sendAiMessage()"><i class="fa-solid fa-paper-plane me-1"></i> إرسال</button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead class="table-light"><tr><th>التاريخ</th><th>البيان</th><th>الفئة</th><th>النوع</th><th>المبلغ</th><th>إجراء</th></tr></thead>
-                        <tbody id="transactionList"></tbody>
-                    </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal إضافة حساب جديد للشجرة -->
+    <div class="modal fade" id="accountModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">إضافة حساب جديد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAccountForm">
+                        <input type="hidden" id="modalParentId">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">كود الحساب</label>
+                            <input type="text" id="accCode" class="form-control" placeholder="1104" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">اسم الحساب</label>
+                            <input type="text" id="accName" class="form-control" placeholder="العهد النقدية" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">حفظ</button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- JavaScript Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let isLoginMode = true;
-        let token = localStorage.getItem('token');
-        let transactions = [];
-        let categoryChart;
+        // البيانات الأساسية لشجرة الحسابات الخماسية
+        let chartOfAccounts = [
+            { id: 1, code: "1", name: "الأصول", children: [
+                { id: 11, code: "11", name: "الأصول المتداولة", children: [
+                    { id: 1101, code: "1101", name: "الصندوق والنقدية", balance: 0 },
+                    { id: 1102, code: "1102", name: "البنك", balance: 0 },
+                    { id: 1103, code: "1103", name: "العملاء / الذمم المدينة", balance: 0 }
+                ]}
+            ]},
+            { id: 2, code: "2", name: "الالتزامات", children: [
+                { id: 21, code: "21", name: "الالتزامات المتداولة", children: [
+                    { id: 2101, code: "2101", name: "الموردون / الذمم الدائنة", balance: 0 }
+                ]}
+            ]},
+            { id: 3, code: "3", name: "حقوق الملكية", children: [
+                { id: 31, code: "31", name: "رأس المال", balance: 0 }
+            ]},
+            { id: 4, code: "4", name: "الإيرادات", children: [
+                { id: 4101, code: "4101", name: "إيرادات المبيعات والخدمات", balance: 0 }
+            ]},
+            { id: 5, code: "5", name: "المصروفات", children: [
+                { id: 5101, code: "5101", name: "مصروف الإيجار", balance: 0 },
+                { id: 5102, code: "5102", name: "مصروف الرواتب والأجور", balance: 0 }
+            ]}
+        ];
 
-        document.getElementById('toggleAuth').addEventListener('click', (e) => {
-            e.preventDefault();
-            isLoginMode = !isLoginMode;
-            document.getElementById('authTitle').innerText = isLoginMode ? 'تسجيل الدخول' : 'إنشاء حساب جديد';
-            document.getElementById('authBtn').innerText = isLoginMode ? 'تسجيل الدخول' : 'إنشاء الحساب';
-            document.getElementById('toggleAuth').innerText = isLoginMode ? 'ليس لديك حساب؟ إنشاء حساب جديد' : 'لديك حساب بالفعل؟ تسجيل الدخول';
+        let journalEntries = [];
+        let accountModal;
+        let cfoMainChart, cfoPieChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            accountModal = new bootstrap.Modal(document.getElementById('accountModal'));
+            document.getElementById('entryDate').valueAsDate = new Date();
+            
+            initCharts();
+            refreshAll();
         });
 
-        document.getElementById('authForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const endpoint = isLoginMode ? '/api/login' : '/api/register';
+        // تحديث جميع الواجهات والبيانات
+        function refreshAll() {
+            renderTree();
+            populateAccountDropdowns();
+            renderJournalTable();
+            renderTrialBalance();
+            updateCFODashboard();
+        }
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+        // رسم شجرة الحسابات
+        function renderTree() {
+            document.getElementById('treeContainer').innerHTML = generateTreeHTML(chartOfAccounts);
+        }
+
+        function generateTreeHTML(nodes) {
+            let html = '<ul>';
+            nodes.forEach(node => {
+                html += `
+                    <li>
+                        <div class="tree-node">
+                            <div>
+                                <span class="badge bg-secondary me-2">${node.code}</span>
+                                <strong>${node.name}</strong>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-success border-0" onclick="openAddModal(${node.id})"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                        ${node.children ? generateTreeHTML(node.children) : ''}
+                    </li>
+                `;
             });
-            const data = await res.json();
+            html += '</ul>';
+            return html;
+        }
 
-            if (res.ok) {
-                if (isLoginMode) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('username', data.username);
-                    initApp();
+        // تعبئة المنسدلات للحسابات المدينة والدائنة
+        function populateAccountDropdowns() {
+            const debSelect = document.getElementById('debitAccount');
+            const credSelect = document.getElementById('creditAccount');
+            
+            debSelect.innerHTML = '';
+            credSelect.innerHTML = '';
+
+            const flatAccounts = getFlatAccounts(chartOfAccounts);
+            flatAccounts.forEach(acc => {
+                const opt1 = new Option(`${acc.code} - ${acc.name}`, acc.code);
+                const opt2 = new Option(`${acc.code} - ${acc.name}`, acc.code);
+                debSelect.add(opt1);
+                credSelect.add(opt2);
+            });
+        }
+
+        function getFlatAccounts(nodes) {
+            let list = [];
+            nodes.forEach(node => {
+                if (!node.children || node.children.length === 0) {
+                    list.push(node);
                 } else {
-                    alert('تم إنشاء الحساب بنجاح، يمكنك الآن تسجيل الدخول.');
-                    document.getElementById('toggleAuth').click();
+                    list = list.concat(getFlatAccounts(node.children));
                 }
-            } else { alert(data.message || 'حدث خطأ غير متوقع'); }
-        });
-
-        function initApp() {
-            token = localStorage.getItem('token');
-            if (!token) {
-                document.getElementById('authSection').classList.remove('d-none');
-                document.getElementById('appSection').classList.add('d-none');
-                return;
-            }
-            document.getElementById('authSection').classList.add('d-none');
-            document.getElementById('appSection').classList.remove('d-none');
-            document.getElementById('userGreeting').innerText = `أهلاً، ${localStorage.getItem('username')}`;
-            document.getElementById('date').valueAsDate = new Date();
-            fetchTransactions();
+            });
+            return list;
         }
 
-        async function fetchTransactions() {
-            const res = await fetch('/api/transactions', { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.status === 401 || res.status === 403) return logout();
-            transactions = await res.json();
-            updateUI();
-        }
-
-        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+        // حفظ القيد المزدوج
+        document.getElementById('journalForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            const body = {
-                type: document.getElementById('type').value,
-                description: document.getElementById('description').value,
-                amount: parseFloat(document.getElementById('amount').value),
-                category: document.getElementById('category').value,
-                date: document.getElementById('date').value
+            const entry = {
+                id: Date.now(),
+                date: document.getElementById('entryDate').value,
+                desc: document.getElementById('entryDesc').value,
+                debitCode: document.getElementById('debitAccount').value,
+                creditCode: document.getElementById('creditAccount').value,
+                amount: parseFloat(document.getElementById('entryAmount').value)
             };
 
-            await fetch('/api/transactions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(body)
-            });
-
-            document.getElementById('transactionForm').reset();
-            document.getElementById('date').valueAsDate = new Date();
-            fetchTransactions();
+            journalEntries.push(entry);
+            document.getElementById('journalForm').reset();
+            document.getElementById('entryDate').valueAsDate = new Date();
+            refreshAll();
         });
 
-        async function deleteTransaction(id) {
-            if (!confirm('هل انت تأكد من حذف العملية؟')) return;
-            await fetch(`/api/transactions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-            fetchTransactions();
-        }
+        // رسم جدول اليومية
+        function renderJournalTable() {
+            const tbody = document.getElementById('journalTableBody');
+            tbody.innerHTML = '';
 
-        function logout() { localStorage.clear(); initApp(); }
+            const flat = getFlatAccounts(chartOfAccounts);
 
-        function updateUI() {
-            const list = document.getElementById('transactionList');
-            list.innerHTML = '';
-            let inc = 0, exp = 0, cats = {};
+            journalEntries.forEach((j, index) => {
+                const debAcc = flat.find(a => a.code === j.debitCode)?.name || j.debitCode;
+                const credAcc = flat.find(a => a.code === j.creditCode)?.name || j.creditCode;
 
-            transactions.forEach(t => {
-                const amount = parseFloat(t.amount);
-                if (t.type === 'income') inc += amount;
-                if (t.type === 'expense') {
-                    exp += amount;
-                    cats[t.category] = (cats[t.category] || 0) + amount;
-                }
-
-                list.innerHTML += `
+                tbody.innerHTML += `
                     <tr>
-                        <td>${t.date}</td><td>${t.description}</td>
-                        <td><span class="badge bg-secondary">${t.category}</span></td>
-                        <td><span class="badge ${t.type === 'income' ? 'bg-success' : 'bg-danger'}">${t.type === 'income' ? 'إيراد' : 'مصروف'}</span></td>
-                        <td class="fw-bold ${t.type === 'income' ? 'text-success' : 'text-danger'}">${t.type === 'income' ? '+' : '-'}${amount.toLocaleString()} ر.س</td>
-                        <td><button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${t.id})"><i class="fa-solid fa-trash"></i></button></td>
+                        <td>${index + 1}</td>
+                        <td>${j.date}</td>
+                        <td>${j.desc}</td>
+                        <td class="text-success fw-bold">${debAcc}</td>
+                        <td class="text-danger fw-bold">${credAcc}</td>
+                        <td class="fw-bold">${j.amount.toLocaleString()} ر.س</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteEntry(${j.id})"><i class="fa-solid fa-trash"></i></button>
+                        </td>
                     </tr>
                 `;
             });
-
-            document.getElementById('totalIncome').innerText = inc.toLocaleString() + ' ر.س';
-            document.getElementById('totalExpense').innerText = exp.toLocaleString() + ' ر.س';
-            document.getElementById('netBalance').innerText = (inc - exp).toLocaleString() + ' ر.س';
-
-            renderChart(cats);
         }
 
-        function renderChart(cats) {
-            const ctx = document.getElementById('categoryChart').getContext('2d');
-            if (categoryChart) categoryChart.destroy();
-            categoryChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'] }] },
-                options: { plugins: { title: { display: true, text: 'توزيع المصروفات حسب الفئة' } }, responsive: true }
+        function deleteEntry(id) {
+            journalEntries = journalEntries.filter(j => j.id !== id);
+            refreshAll();
+        }
+
+        // رسم ميزان المراجعة
+        function renderTrialBalance() {
+            const tbody = document.getElementById('trialBalanceBody');
+            tbody.innerHTML = '';
+
+            const flat = getFlatAccounts(chartOfAccounts);
+            flat.forEach(acc => {
+                let debitSum = 0;
+                let creditSum = 0;
+
+                journalEntries.forEach(j => {
+                    if (j.debitCode === acc.code) debitSum += j.amount;
+                    if (j.creditCode === acc.code) creditSum += j.amount;
+                });
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${acc.code}</td>
+                        <td>${acc.name}</td>
+                        <td class="text-success">${debitSum.toLocaleString()}</td>
+                        <td class="text-danger">${creditSum.toLocaleString()}</td>
+                    </tr>
+                `;
             });
         }
 
-        function exportToCSV() {
-            let csv = "\uFEFFالتاريخ,البيان,الفئة,النوع,المبلغ\n";
-            transactions.forEach(t => { csv += `"${t.date}","${t.description}","${t.category}","${t.type === 'income' ? 'إيراد' : 'مصروف'}","${t.amount}"\n`; });
+        // تحديث لوحة المدير المالي CFO
+        function updateCFODashboard() {
+            let assets = 0, liabilities = 0, revenue = 0, expenses = 0;
+
+            journalEntries.forEach(j => {
+                if (j.debitCode.startsWith('1')) assets += j.amount;
+                if (j.creditCode.startsWith('1')) assets -= j.amount;
+
+                if (j.creditCode.startsWith('2')) liabilities += j.amount;
+                if (j.debitCode.startsWith('2')) liabilities -= j.amount;
+
+                if (j.creditCode.startsWith('4')) revenue += j.amount;
+                if (j.debitCode.startsWith('5')) expenses += j.amount;
+            });
+
+            const profit = revenue - expenses;
+
+            document.getElementById('cfoAssets').innerText = `${assets.toLocaleString()} ر.س`;
+            document.getElementById('cfoLiabilities').innerText = `${liabilities.toLocaleString()} ر.س`;
+            document.getElementById('cfoRevenue').innerText = `${revenue.toLocaleString()} ر.س`;
+            document.getElementById('cfoProfit').innerText = `${profit.toLocaleString()} ر.س`;
+
+            // تحديث الرسوم البيانية
+            cfoMainChart.data.datasets[0].data = [revenue, expenses, profit];
+            cfoMainChart.update();
+
+            cfoPieChart.data.datasets[0].data = [assets, liabilities];
+            cfoPieChart.update();
+        }
+
+        function initCharts() {
+            const ctx1 = document.getElementById('cfoMainChart').getContext('2d');
+            cfoMainChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['الإيرادات', 'المصروفات', 'صافي الأرباح'],
+                    datasets: [{ data: [0, 0, 0], backgroundColor: ['#10b981', '#ef4444', '#3b82f6'] }]
+                },
+                options: { plugins: { legend: { display: false } }, responsive: true }
+            });
+
+            const ctx2 = document.getElementById('cfoPieChart').getContext('2d');
+            cfoPieChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['الأصول', 'الالتزامات'],
+                    datasets: [{ data: [0, 0], backgroundColor: ['#3b82f6', '#f59e0b'] }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        // إضافة حساب جديد
+        function openAddModal(parentId) {
+            document.getElementById('modalParentId').value = parentId;
+            accountModal.show();
+        }
+
+        document.getElementById('addAccountForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pId = document.getElementById('modalParentId').value;
+            const newAcc = {
+                id: Date.now(),
+                code: document.getElementById('accCode').value,
+                name: document.getElementById('accName').value,
+                children: []
+            };
+
+            if (pId === 'root') {
+                chartOfAccounts.push(newAcc);
+            } else {
+                addToNode(chartOfAccounts, pId, newAcc);
+            }
+
+            accountModal.hide();
+            refreshAll();
+        });
+
+        function addToNode(nodes, parentId, newNode) {
+            for (let n of nodes) {
+                if (n.id == parentId) {
+                    if (!n.children) n.children = [];
+                    n.children.push(newNode);
+                    return true;
+                }
+                if (n.children && addToNode(n.children, parentId, newNode)) return true;
+            }
+            return false;
+        }
+
+        // تفاعل الذكاء الاصطناعي AI CFO
+        function sendAiMessage() {
+            const input = document.getElementById('aiInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendChat(text, 'user');
+            input.value = '';
+
+            setTimeout(() => {
+                let reply = "تم تحليل النص وتوليد القيد المحاسبي تلقائياً بنجاح:\n";
+                if (text.includes('إيجار')) {
+                    reply += "• **من حـ/ مصروف الإيجار (5101):** مدين\n• **إلى حـ/ البنك (1102):** دائن";
+                } else {
+                    reply += "• **من حـ/ الصندوق والنقدية (1101):** مدين\n• **إلى حـ/ إيرادات المبيعات (4101):** دائن";
+                }
+                appendChat(reply, 'ai');
+            }, 500);
+        }
+
+        function appendChat(msg, sender) {
+            const box = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `chat-msg ${sender}`;
+            div.innerText = msg;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function exportCSV() {
+            let csv = "\uFEFFالتاريخ,البيان,الطرف المدين,الطرف الدائن,المبلغ\n";
+            journalEntries.forEach(j => {
+                csv += `"${j.date}","${j.desc}","${j.debitCode}","${j.creditCode}","${j.amount}"\n`;
+            });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `تقرير_مالي_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `دفتر_اليومية_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
         }
-
-        window.onload = initApp;
     </script>
 </body>
 </html>

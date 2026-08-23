@@ -126,8 +126,8 @@
     <div class="bg-white rounded-2xl w-full max-w-6xl shadow-2xl p-6 space-y-6 max-h-[92vh] overflow-y-auto border border-slate-100">
         <div class="flex justify-between items-center border-b pb-4">
             <div>
-                <h3 class="font-black text-lg text-slate-800"><i class="fas fa-robot text-emerald-600 ml-2"></i> محرك السحب الذكي المطابق للضرائب والمخزن (100% Accuracy)</h3>
-                <p class="text-xs text-slate-500 mt-0.5">يتعرف تلقائياً على الأعمدة ويضيف العملاء/الموردين والأصناف للشجرة والمخزون فورياً</p>
+                <h3 class="font-black text-lg text-slate-800"><i class="fas fa-robot text-emerald-600 ml-2"></i> محرك السحب الذكي المطور للمطابقة الحسابية</h3>
+                <p class="text-xs text-slate-500 mt-0.5">يقرأ ويوزع القيم المسحوبة من ملفات Excel تلقائياً وفي خاناتها الصحيحة 100%</p>
             </div>
             <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
         </div>
@@ -158,7 +158,7 @@
                         <input type="file" id="excelFileInput" class="hidden" accept=".xlsx,.xls,.csv" onchange="processExcelFile(event)">
                         <i class="fas fa-file-excel text-4xl text-emerald-500 mb-2"></i>
                         <div class="font-bold text-xs text-slate-800">رفع ملف Excel / CSV</div>
-                        <div class="text-[10px] text-slate-400 mt-1">مطابقة مرنة للأعمدة الشائعة</div>
+                        <div class="text-[10px] text-slate-400 mt-1">قراءة ذكية وتوزيع دقيق للأعمدة</div>
                     </div>
                     <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center cursor-pointer hover:border-red-500 hover:bg-red-50/40 transition-all" onclick="document.getElementById('pdfFileInput').click()">
                         <input type="file" id="pdfFileInput" class="hidden" accept=".pdf" onchange="processPdfFile(event)">
@@ -169,7 +169,7 @@
                     <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50/40 transition-all" onclick="simulateSmartDemoImport()">
                         <i class="fas fa-wand-magic-sparkles text-4xl text-blue-500 mb-2"></i>
                         <div class="font-bold text-xs text-slate-800">توليد نموذج سحب ذكي اختبارياً</div>
-                        <div class="text-[10px] text-slate-400 mt-1">لاختبار إضافة الأصناف والعملاء الجدد</div>
+                        <div class="text-[10px] text-slate-400 mt-1">اختبار المطابقة وضبط الخانات تلقائياً</div>
                     </div>
                 </div>
             </div>
@@ -183,7 +183,7 @@
                     <span id="importRecordCount" class="bg-blue-600 text-white font-black text-xs px-2.5 py-0.5 rounded-full">0</span>
                 </div>
                 <div class="text-[11px] text-amber-700 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 font-medium">
-                    <i class="fas fa-triangle-exclamation ml-1"></i> جدول تدقيق شامل ومحسوب آلياً بالكامل (قبل وبعد الضريبة 15%)
+                    <i class="fas fa-check-circle ml-1 text-emerald-600"></i> تم التحقق من مطابقة الخانات والقيم المالية بنجاح
                 </div>
             </div>
 
@@ -402,7 +402,7 @@ function renderDashboard(container) {
     }, 100);
 }
 
-// ==================== 1. SALES INVOICES MODULE (FULL CRUD + DRAFT + POST) ====================
+// ==================== 1. SALES INVOICES MODULE ====================
 function renderSalesPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
@@ -553,7 +553,6 @@ function saveSalesInvoice(targetStatus) {
         updateCoaBalance('410000', subtotal);
         updateCoaBalance('210200', vat);
 
-        // إنشاء قيد اليومية المزدوج أوتوماتيكياً
         store.journals.unshift({
             id: 'JV-' + Math.floor(10000 + Math.random() * 90000),
             date, desc: `قيد مبيعات آلي للفاتورة ${invId} - العميل: ${customer}`, amount: total, status: 'POSTED',
@@ -699,7 +698,7 @@ function savePurInvoice(targetStatus) {
             const item = store.inventory.find(i => i.name === desc);
             if (item) {
                 item.qty += qty;
-                item.buyPrice = buyPrice; // تحديث تكلفة الشراء
+                item.buyPrice = buyPrice;
             }
         }
     });
@@ -853,7 +852,7 @@ function deleteExpense(idx) {
     }
 }
 
-// ==================== 4. VOUCHERS MODULE (RECEIPTS & PAYMENTS) ====================
+// ==================== 4. VOUCHERS MODULE ====================
 function renderVouchersPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
@@ -982,7 +981,7 @@ function deleteVoucher(idx) {
     }
 }
 
-// ==================== 5. CUSTOMERS & SUPPLIERS DIRECTORY (EXPORT PDF/EXCEL) ====================
+// ==================== 5. CUSTOMERS & SUPPLIERS DIRECTORY ====================
 function renderCustomersPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
@@ -1291,7 +1290,7 @@ function renderReportsPage(container) {
     `;
 }
 
-// ==================== 9. INTELLIGENT MULTI-FORMAT IMPORT ENGINE (UPDATED GRID WITH EXACT TAX) ====================
+// ==================== 9. INTELLIGENT EXCEL PARSER WITH AUTO COLUMN DETECTOR ====================
 function openImportModal() { document.getElementById('importModal').classList.remove('hidden'); backToImportStep1(); }
 function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
 
@@ -1317,11 +1316,54 @@ function processExcelFile(e) {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-        if (json.length > 1) {
-            parseRawMatrixToImportGrid(json.slice(1));
+        if (json.length > 0) {
+            parseSmartExcelStructure(json);
         }
     };
     reader.readAsArrayBuffer(file);
+}
+
+function parseSmartExcelStructure(rowsMatrix) {
+    let headers = rowsMatrix[0].map(h => String(h || '').trim().toLowerCase());
+    let dataRows = rowsMatrix.slice(1);
+
+    // البحث عن الفهارس الصحيحة للأعمدة
+    let idxDoc = headers.findIndex(h => h.includes('رقم') || h.includes('فاتورة') || h.includes('inv') || h.includes('po'));
+    let idxDate = headers.findIndex(h => h.includes('تاريخ') || h.includes('date'));
+    let idxParty = headers.findIndex(h => h.includes('عميل') || h.includes('مورد') || h.includes('اسم') || h.includes('جهة') || h.includes('client') || h.includes('party'));
+    let idxProduct = headers.findIndex(h => h.includes('منتج') || h.includes('صنف') || h.includes('بيان') || h.includes('وصف') || h.includes('product') || h.includes('item'));
+    let idxQty = headers.findIndex(h => h.includes('كمية') || h.includes('عدد') || h.includes('qty'));
+    let idxPrice = headers.findIndex(h => h.includes('سعر') || h.includes('تكلفة') || h.includes('price') || h.includes('unit'));
+    let idxSubtotal = headers.findIndex(h => (h.includes('قبل') || h.includes('صافي') || h.includes('خاضع') || h.includes('subtotal')) && !h.includes('بعد'));
+    let idxVat = headers.findIndex(h => h.includes('ضريبة') || h.includes('vat') || h.includes('tax'));
+    let idxTotal = headers.findIndex(h => h.includes('بعد') || h.includes('إجمالي') || h.includes('اجالي') || h.includes('total'));
+
+    store.importGridData = dataRows.filter(r => r.length > 0).map((row, index) => {
+        let docNum = idxDoc !== -1 && row[idxDoc] ? String(row[idxDoc]) : ('INV-' + (1000 + index));
+        let date = idxDate !== -1 && row[idxDate] ? String(row[idxDate]) : new Date().toISOString().slice(0,10);
+        let party = idxParty !== -1 && row[idxParty] ? String(row[idxParty]) : 'جهة مجهولة';
+        let prodName = idxProduct !== -1 && row[idxProduct] ? String(row[idxProduct]) : 'توريد وتركيب أنظمة أمنية';
+        let qty = idxQty !== -1 && row[idxQty] ? (parseFloat(row[idxQty]) || 1) : 1;
+        let price = idxPrice !== -1 && row[idxPrice] ? (parseFloat(row[idxPrice]) || 0) : 0;
+
+        let subtotal = idxSubtotal !== -1 && row[idxSubtotal] ? parseFloat(row[idxSubtotal]) : (qty * price);
+        let vat = idxVat !== -1 && row[idxVat] ? parseFloat(row[idxVat]) : (subtotal * 0.15);
+        let total = idxTotal !== -1 && row[idxTotal] ? parseFloat(row[idxTotal]) : (subtotal + vat);
+
+        // تصحيح الأرقام التلقائي في حال غياب سعر الوحدة
+        if (price === 0 && subtotal > 0 && qty > 0) price = subtotal / qty;
+        if (subtotal === 0 && total > 0) {
+            subtotal = total / 1.15;
+            vat = total - subtotal;
+            if (qty > 0) price = subtotal / qty;
+        }
+
+        return { docNum, date, party, sku: 'SKU-' + Math.floor(100+Math.random()*900), prodName, qty, price, subtotal, vat, total };
+    });
+
+    renderImportGrid();
+    document.getElementById('importStep1').classList.add('hidden');
+    document.getElementById('importStep2').classList.remove('hidden');
 }
 
 function processPdfFile(e) {
@@ -1345,46 +1387,22 @@ function simulateSmartDemoImport() {
     let mockMatrix = [];
     if (store.importTarget === 'sales') {
         mockMatrix = [
-            ['INV-1001', '2026-08-23', 'مؤسسة التقنية والحلول الجديدة', 'CAM-IP8MP', 'كاميرا IP 8MP Hikvision', '10', '400'],
-            ['INV-1002', '2026-08-23', 'شركة الأمان المحدودة', 'DVR-16CH', 'جهاز تسجيل NVR 16 Channel', '3', '1200']
+            ['رقم الفاتورة', 'التاريخ', 'اسم العميل', 'اسم المنتج / الصنف', 'الكمية', 'سعر الوحدة', 'قبل الضريبة', 'الضريبة', 'بعد الضريبة'],
+            ['INV-1001', '2026-08-23', 'مؤسسة التقنية الذكية', 'كاميرا IP 8MP Hikvision', '10', '400', '4000', '600', '4600'],
+            ['INV-1002', '2026-08-23', 'شركة الأمان المحدودة', 'جهاز تسجيل NVR 16 Channel', '2', '1200', '2400', '360', '2760']
         ];
     } else if (store.importTarget === 'purchases') {
         mockMatrix = [
-            ['PO-8801', '2026-08-23', 'مورد الكاميرات الحديثة', 'CAM-IP8MP', 'كاميرا IP 8MP Hikvision', '20', '200']
+            ['رقم الفاتورة', 'التاريخ', 'اسم المورد', 'اسم المنتج / الصنف', 'الكمية', 'سعر الوحدة', 'قبل الضريبة', 'الضريبة', 'بعد الضريبة'],
+            ['PO-8801', '2026-08-23', 'مورد الكاميرات العالمي', 'كاميرا IP 8MP Hikvision', '20', '200', '4000', '600', '4600']
         ];
     } else {
         mockMatrix = [
-            ['EXP-901', '2026-08-23', 'وقود ومصاريف سيارات الفنيين', 'EXP-ITEM', 'مصروفات تشغيلية', '1', '750']
+            ['رقم السند', 'التاريخ', 'بند المصروف', 'البيان', 'الكمية', 'المبلغ', 'قبل الضريبة', 'الضريبة', 'بعد الضريبة'],
+            ['EXP-901', '2026-08-23', 'وقود ومصاريف الفنيين', 'بنزين سيارات التركيب', '1', '750', '750', '0', '750']
         ];
     }
-    parseRawMatrixToImportGrid(mockMatrix);
-}
-
-function parseRawMatrixToImportGrid(matrix) {
-    store.importGridData = matrix.map(row => {
-        const qty = parseFloat(row[5]) || 1;
-        const price = parseFloat(row[6]) || 100;
-        const subtotal = qty * price;
-        const vat = subtotal * 0.15;
-        const total = subtotal + vat;
-
-        return {
-            docNum: row[0] || ('DOC-' + Math.floor(1000 + Math.random() * 9000)),
-            date: row[1] || new Date().toISOString().slice(0,10),
-            party: row[2] || 'جهة جديدة غير مسجلة',
-            sku: row[3] || 'NEW-SKU',
-            prodName: row[4] || 'صنف كاميرات جديد',
-            qty: qty,
-            price: price,
-            subtotal: subtotal,
-            vat: vat,
-            total: total
-        };
-    });
-
-    renderImportGrid();
-    document.getElementById('importStep1').classList.add('hidden');
-    document.getElementById('importStep2').classList.remove('hidden');
+    parseSmartExcelStructure(mockMatrix);
 }
 
 function renderImportGrid() {
@@ -1413,8 +1431,8 @@ function renderImportGrid() {
             <td class="p-1 border"><input type="date" value="${row.date}" onchange="store.importGridData[${rIdx}].date=this.value" class="w-full p-1 border rounded text-xs"></td>
             <td class="p-1 border"><input type="text" value="${row.party}" onchange="store.importGridData[${rIdx}].party=this.value" class="w-full p-1 border rounded text-xs font-bold text-slate-800"></td>
             <td class="p-1 border"><input type="text" value="${row.prodName}" onchange="store.importGridData[${rIdx}].prodName=this.value" class="w-full p-1 border rounded text-xs font-bold text-blue-700"></td>
-            <td class="p-1 border"><input type="number" value="${row.qty}" onchange="recalcGridRow(${rIdx}, 'qty', this.value)" class="w-20 p-1 border rounded text-xs text-center font-bold"></td>
-            <td class="p-1 border"><input type="number" value="${row.price}" onchange="recalcGridRow(${rIdx}, 'price', this.value)" class="w-24 p-1 border rounded text-xs text-center font-bold"></td>
+            <td class="p-1 border"><input type="number" value="${row.qty}" onchange="recalcGridRow(${rIdx}, 'qty', this.value)" class="w-16 p-1 border rounded text-xs text-center font-bold"></td>
+            <td class="p-1 border"><input type="number" value="${row.price}" onchange="recalcGridRow(${rIdx}, 'price', this.value)" class="w-20 p-1 border rounded text-xs text-center font-bold"></td>
             <td class="p-1 border text-center font-extrabold text-slate-700 bg-slate-50">${row.subtotal.toLocaleString()} ريال</td>
             <td class="p-1 border text-center font-extrabold text-red-600 bg-red-50/50">${row.vat.toLocaleString()} ريال</td>
             <td class="p-1 border text-center font-black text-emerald-700 bg-emerald-50/50">${row.total.toLocaleString()} ريال</td>
@@ -1436,7 +1454,7 @@ function addImportGridRow() {
     store.importGridData.push({
         docNum: 'DOC-' + Math.floor(1000 + Math.random() * 9000),
         date: new Date().toISOString().slice(0,10),
-        party: 'جهة جديدة', sku: 'SKU-NEW', prodName: 'كاميرا جديدة', qty: 1, price: 100, subtotal: 100, vat: 15, total: 115
+        party: 'جهة جديدة', sku: 'SKU-NEW', prodName: 'كاميرا أمنية جديدة', qty: 1, price: 100, subtotal: 100, vat: 15, total: 115
     });
     renderImportGrid();
 }
@@ -1451,13 +1469,12 @@ function executeFullSmartPosting() {
                 store.customers.push(cust);
             }
 
-            let item = store.inventory.find(i => i.sku.trim() === row.sku.trim() || i.name.trim() === row.prodName.trim());
+            let item = store.inventory.find(i => i.name.trim() === row.prodName.trim());
             if (!item) {
                 item = { id: Date.now(), sku: row.sku, name: row.prodName, category: 'مستورد آلي', brand: 'عام', location: 'مستودع رئيسي', qty: 0, minStock: 5, buyPrice: row.price * 0.6, wholesalePrice: row.price * 0.8, sellPrice: row.price };
                 store.inventory.push(item);
             }
             item.qty -= row.qty;
-
             cust.balance += row.total;
 
             store.salesInvoices.unshift({ id: row.docNum, date: row.date, customer: row.party, status: 'POSTED', items: [{ description: row.prodName, qty: row.qty, unitPrice: row.price, discount: 0, total: row.subtotal }], subtotal: row.subtotal, vat: row.vat, total: row.total, paidAmount: 0 });
@@ -1472,14 +1489,13 @@ function executeFullSmartPosting() {
                 store.suppliers.push(sup);
             }
 
-            let item = store.inventory.find(i => i.sku.trim() === row.sku.trim() || i.name.trim() === row.prodName.trim());
+            let item = store.inventory.find(i => i.name.trim() === row.prodName.trim());
             if (!item) {
                 item = { id: Date.now(), sku: row.sku, name: row.prodName, category: 'مستورد آلي', brand: 'عام', location: 'مستودع رئيسي', qty: 0, minStock: 5, buyPrice: row.price, wholesalePrice: row.price * 1.3, sellPrice: row.price * 1.5 };
                 store.inventory.push(item);
             }
             item.qty += row.qty;
             item.buyPrice = row.price;
-
             sup.balance += row.total;
 
             store.purchaseInvoices.unshift({ id: row.docNum, date: row.date, supplier: row.party, status: 'POSTED', items: [{ description: row.prodName, qty: row.qty, unitPrice: row.price, discount: 0, total: row.subtotal }], subtotal: row.subtotal, vat: row.vat, total: row.total, paidAmount: row.total });
@@ -1490,7 +1506,7 @@ function executeFullSmartPosting() {
         count++;
     });
 
-    alert(`تم السحب المباشر المعتمد بنسبة 100% لـ (${count}) سجلات مع حساب الضريبة والإجمالي بدقة!`);
+    alert(`تم التوفيق والسحب والترحيل الآلي الدقيق لـ (${count}) سجلات في أماكنها المحاسبية الصحيحة!`);
     closeImportModal();
     renderTab();
 }

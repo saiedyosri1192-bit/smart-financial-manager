@@ -1,11 +1,9 @@
 import os
-import sys
 import sqlite3
 from datetime import datetime
 from flask import Flask, render_template_string, request, jsonify, send_file
 import pandas as pd
 
-# حاول استيراد pdfplumber بشفافية (معالجة عدم وجودها دون إيقاف البرنامج)
 try:
     import pdfplumber
     HAS_PDF = True
@@ -30,8 +28,6 @@ class AccountingEngine:
     def init_db(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
-            # 1. شجرة الحسابات (COA)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS coa (
                     code TEXT PRIMARY KEY,
@@ -40,8 +36,6 @@ class AccountingEngine:
                     balance REAL DEFAULT 0.0
                 )
             ''')
-
-            # 2. قيود اليومية العامة
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS journal_entries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,8 +45,6 @@ class AccountingEngine:
                     is_posted INTEGER DEFAULT 0
                 )
             ''')
-
-            # 3. تفاصيل بنود القيد
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS journal_lines (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,7 +57,6 @@ class AccountingEngine:
                 )
             ''')
 
-            # إدخال شجرة الحسابات الافتراضية
             default_accounts = [
                 ('110100', 'الصندوق الرئيسي / النقدية', 'ASSET', 50000.0),
                 ('110200', 'بنك الراجحي الرئيسي', 'ASSET', 180000.0),
@@ -89,7 +80,7 @@ class AccountingEngine:
         total_credit = sum(float(line.get('credit', 0)) for line in lines)
 
         if abs(total_debit - total_credit) > 0.001:
-            raise ValueError(f"القيد غير متوازن! إجمالي المدين: {total_debit} - إجمالي الدائن: {total_credit}")
+            raise ValueError(f"القيد غير متوازن! مدين: {total_debit} - دائن: {total_credit}")
 
         date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -124,7 +115,7 @@ class AccountingEngine:
 
     def parse_pdf_text(self, file_path):
         if not HAS_PDF:
-            return "مكتبة pdfplumber غير مثبة، يرجى تشغيل: pip install pdfplumber"
+            return "يرجى تثبيت pdfplumber"
         text = ""
         with pdfplumber.open(file_path) as pdf:
             for page in pdf.pages:
@@ -132,14 +123,13 @@ class AccountingEngine:
         return text
 
 # ==========================================
-# 2. واجهة المستخدم HTML
+# 2. قالب الواجهة (HTML TEMPLATE)
 # ==========================================
-HTML_TEMPLATE = """
-<!DOCTYPE html>
+HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>المنظومة المحاسبية الموحدة ERP</title>
+    <title>منظومة العملاق المحاسبية الشاملة</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -172,7 +162,7 @@ HTML_TEMPLATE = """
         </div>
 
         <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-            <h3 class="font-black text-sm text-slate-800"><i class="fas fa-pen-to-square text-indigo-600 ml-1"></i> إدخال قيد محاسبي جديد</h3>
+            <h3 class="font-black text-sm text-slate-800"><i class="fas fa-pen-to-square text-indigo-600 ml-1"></i> إدخال قيود محاسبية جديدة</h3>
             <div class="grid grid-cols-3 gap-4 text-xs">
                 <div><label class="block font-bold mb-1">البيان / الشرح *</label><input type="text" id="entryDesc" class="w-full border p-2 rounded-xl font-bold" placeholder="إثبات عملية محاسبية"></div>
                 <div><label class="block font-bold mb-1">رمز حساب المدين *</label><input type="text" id="debitCode" value="110100" class="w-full border p-2 rounded-xl font-bold"></div>
@@ -236,7 +226,7 @@ HTML_TEMPLATE = """
             const creditAmt = parseFloat(document.getElementById('creditAmt').value) || 0;
 
             if(!desc || debitAmt <= 0 || creditAmt <= 0) {
-                alert('يرجى ملء جميع الحقول بمبالغ صحيحة');
+                alert('يرجى كتابة البيان والمبالغ بشكل صحيح');
                 return;
             }
 
@@ -269,12 +259,12 @@ HTML_TEMPLATE = """
             const formData = new FormData();
             formData.append('file', input.files[0]);
 
-            document.getElementById('importStatus').innerText = "جاري القراءة...";
+            document.getElementById('importStatus').innerText = "جاري رفع وقراءة الملف...";
             fetch('/api/import_file', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    document.getElementById('importStatus').innerText = "تم استيراد وقراءة الملف بنجاح!";
+                    document.getElementById('importStatus').innerText = "تم استيراد الملف بنجاح!";
                 } else {
                     document.getElementById('importStatus').innerText = "خطأ: " + data.message;
                 }
@@ -282,11 +272,10 @@ HTML_TEMPLATE = """
         }
     </script>
 </body>
-</html>
-"""
+</html>"""
 
 # ==========================================
-# 3. خادم التطبيق (Flask Web Server)
+# 3. الخادم والمشغل (Flask App Server)
 # ==========================================
 app = Flask(__name__)
 engine = AccountingEngine()
@@ -329,7 +318,7 @@ def export_excel():
 @app.route('/api/import_file', methods=['POST'])
 def import_file():
     if 'file' not in request.files:
-        return jsonify({'status': 'error', 'message': 'لم يتم إرفاق ملف'}), 400
+        return jsonify({'status': 'error', 'message': 'لم يتم رفع ملف'}), 400
     
     file = request.files['file']
     filename = file.filename.lower()
@@ -345,11 +334,10 @@ def import_file():
         elif filename.endswith('.pdf'):
             parsed_text = engine.parse_pdf_text(file_path)
             return jsonify({'status': 'success', 'type': 'pdf', 'raw_text': parsed_text})
-        return jsonify({'status': 'error', 'message': 'صيغة غير مدعومة'}), 400
+        return jsonify({'status': 'error', 'message': 'الصيغة غير مدعومة'}), 400
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
-    print("=== جاري تشغيل البرنامج المحاسبي الموحد ===")
-    print("افتح الرابط التالي في المتصفح: http://127.0.0.1:5000")
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    print("=== تم تصحيح القالب وتشغيل النظام المحاسبي بنجاح ===")
+    app.run(host='0.0.0.0', port=5000, debug=True)

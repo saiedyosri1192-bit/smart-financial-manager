@@ -1,4 +1,10 @@
-<!DOCTYPE html>
+/my_accounting_project
+│
+├── app.py
+├── financial_manager.db  (سيتولد تلقائياً)
+└── templates/
+    └── dashboard.html
+    <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -152,3 +158,194 @@
     </script>
 </body>
 </html>
+import os
+import sqlite3
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, send_file
+import pandas as pd
+
+try:
+    import pdfplumber
+    HAS_PDF = True
+except ImportError:
+    HAS_PDF = False
+
+# ==========================================
+# 1. المحرك المحاسبي (Accounting Engine)
+# ==========================================
+DB_NAME = 'financial_manager.db'
+
+class AccountingEngine:
+    def __init__(self, db_name=DB_NAME):
+        self.db_name = db_name
+        self.init_db()
+
+    def get_connection(self):
+        conn = sqlite3.connect(self.db_name)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def init_db(self):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS coa (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    account_type TEXT NOT NULL,
+                    balance REAL DEFAULT 0.0
+                )
+            ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS journal_entries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_date TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    posted_by TEXT NOT NULL,
+                    is_posted INTEGER DEFAULT 0
+                )
+            ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS journal_lines (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_id INTEGER NOT NULL,
+                    account_code TEXT NOT NULL,
+                    debit REAL DEFAULT 0.0,
+                    credit REAL DEFAULT 0.0,
+                    FOREIGN KEY(entry_id) REFERENCES journal_entries(id),
+                    FOREIGN KEY(account_code) REFERENCES coa(code)
+                )
+            ''')
+
+            default_accounts = [
+                ('110100', 'الصندوق الرئيسي / النقدية', 'ASSET', 50000.0),
+                ('110200', 'بنك الراجحي الرئيسي', 'ASSET', 180000.0),
+                ('110300', 'العملاء والذمم المدينة', 'ASSET', 45000.0),
+                ('110501', 'مخزون الكاميرات والأجهزة', 'ASSET', 65000.0),
+                ('110600', 'ضريبة المدخلات المستردة 15%', 'ASSET', 6000.0),
+                ('210100', 'الموردون والذمم الدائنة', 'LIABILITY', 25000.0),
+                ('210200', 'ضريبة المخرجات المستحقة 15%', 'LIABILITY', 10500.0),
+                ('310000', 'رأس المال المعتمد', 'EQUITY', 200000.0),
+                ('410100', 'إيرادات المبيعات والتركيبات', 'REVENUE', 130000.0),
+                ('510100', 'تكلفة البضاعة المباعة (COGS)', 'COGS', 72000.0),
+                ('610100', 'المصروفات التشغيلية', 'EXPENSE', 5500.0)
+            ]
+            for code, name, acc_type, bal in default_accounts:
+                cursor.execute('INSERT OR IGNORE INTO coa VALUES (?, ?, ?, ?)', (code, name, acc_type, bal))
+
+            conn.commit()
+
+    def post_journal_entry(self, description, lines, posted_by='CFO'):
+        total_debit = sum(float(line.get('debit', 0)) for line in lines)
+        total_credit = sum(float(line.get('credit', 0)) for line in lines)
+
+        if abs(total_debit - total_credit) > 0.001:
+            raise ValueError(f"القيد غير متوازن! مدين: {total_debit} - دائن: {total_credit}")
+
+        date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO journal_entries (entry_date, description, posted_by, is_posted)
+                VALUES (?, ?, ?, 1)
+            ''', (date_str, description, posted_by))
+            
+            entry_id = cursor.lastrowid
+
+            for line in lines:
+                debit = float(line.get('debit', 0))
+                credit = float(line.get('credit', 0))
+                code = line['account_code']
+
+                cursor.execute('''
+                    INSERT INTO journal_lines (entry_id, account_code, debit, credit)
+                    VALUES (?, ?, ?, ?)
+                ''', (entry_id, code, debit, credit))
+
+                net_change = debit - credit
+                cursor.execute('UPDATE coa SET balance = balance + ? WHERE code = ?', (net_change, code))
+
+            conn.commit()
+            return entry_id
+
+    def import_excel_data(self, file_path):
+        df = pd.read_excel(file_path)
+        return df.to_dict(orient='records')
+
+    def parse_pdf_text(self, file_path):
+        if not HAS_PDF:
+            return "يرجى تثبيت مكتبة pdfplumber"
+        text = ""
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                text += (page.extract_text() or "")
+        return text
+
+# ==========================================
+# 2. الخادم والمشغل (Flask Server Routes)
+# ==========================================
+app = Flask(__name__)
+engine = AccountingEngine()
+
+@app.route('/')
+def dashboard():
+    conn = engine.get_connection()
+    coa = conn.execute('SELECT * FROM coa').fetchall()
+    journals = conn.execute('''
+        SELECT j.id, j.entry_date, j.description, j.posted_by,
+               SUM(l.debit) as total_amount
+        FROM journal_entries j
+        LEFT JOIN journal_lines l ON j.id = l.entry_id
+        GROUP BY j.id
+        ORDER BY j.id DESC
+    ''').fetchall()
+    return render_template('dashboard.html', coa=coa, journals=journals)
+
+@app.route('/api/post_entry', methods=['POST'])
+def post_entry():
+    data = request.json
+    try:
+        entry_id = engine.post_journal_entry(
+            description=data['description'],
+            lines=data['lines'],
+            posted_by='CFO'
+        )
+        return jsonify({'status': 'success', 'entry_id': entry_id})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+@app.route('/api/export_excel', methods=['GET'])
+def export_excel():
+    conn = engine.get_connection()
+    df = pd.read_sql_query('SELECT * FROM coa', conn)
+    file_path = 'COA_Export.xlsx'
+    df.to_excel(file_path, index=False)
+    return send_file(file_path, as_attachment=True)
+
+@app.route('/api/import_file', methods=['POST'])
+def import_file():
+    if 'file' not in request.files:
+        return jsonify({'status': 'error', 'message': 'لم يتم رفع ملف'}), 400
+    
+    file = request.files['file']
+    filename = file.filename.lower()
+    
+    os.makedirs('uploads', exist_ok=True)
+    file_path = os.path.join('uploads', file.filename)
+    file.save(file_path)
+
+    try:
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            parsed_data = engine.import_excel_data(file_path)
+            return jsonify({'status': 'success', 'type': 'excel', 'data': parsed_data})
+        elif filename.endswith('.pdf'):
+            parsed_text = engine.parse_pdf_text(file_path)
+            return jsonify({'status': 'success', 'type': 'pdf', 'raw_text': parsed_text})
+        return jsonify({'status': 'error', 'message': 'الصيغة غير مدعومة'}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

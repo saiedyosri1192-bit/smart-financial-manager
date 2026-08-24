@@ -76,12 +76,12 @@
             </div>
             <div>
                 <h1 class="font-black text-sm leading-tight" id="headerOrgTitle">مؤسسة الحلول الأمنية المرئية</h1>
-                <p class="text-[10px] text-blue-300">المدير المحاسبي والمدير المالي الذكي (Giant Enterprise ERP)</p>
+                <p class="text-[10px] text-blue-300">المدير المحاسبي والمدير المالي الذكي (Role-Based Enterprise ERP)</p>
             </div>
         </div>
 
         <div class="flex items-center gap-3">
-            <button onclick="openImportModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all">
+            <button onclick="openImportModal()" id="btnHeaderImport" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all">
                 <i class="fas fa-file-import"></i> استيراد وتوفيق البيانات (Excel/PDF)
             </button>
             <button onclick="toggleMissingDataModal()" class="relative bg-amber-500 hover:bg-amber-600 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 transition-all">
@@ -92,12 +92,12 @@
                 <i class="fas fa-brain"></i> المساعد AI
             </button>
             <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-xl text-xs border border-slate-700">
-                <span class="text-slate-400 font-bold px-2 text-[11px]">الصلاحية:</span>
+                <span class="text-slate-400 font-bold px-2 text-[11px]">الصلاحية والوظيفة:</span>
                 <select id="userRoleSelect" onchange="switchRole(this.value)" class="bg-slate-900 text-amber-400 font-bold text-xs p-1 rounded-lg focus:outline-none">
                     <option value="CFO">المدير المالي (CFO)</option>
-                    <option value="ACCOUNTANT_MGR">مدير الحسابات</option>
-                    <option value="ACCOUNTANT">محاسب تنفيذي</option>
-                    <option value="AUDITOR">المراجع الداخلي</option>
+                    <option value="ACCOUNTANT_MGR">مدير الحسابات (Acc Manager)</option>
+                    <option value="ACCOUNTANT">محاسب تنفيذي (Accountant)</option>
+                    <option value="AUDITOR">المراجع الداخلي (Auditor)</option>
                 </select>
             </div>
         </div>
@@ -107,6 +107,10 @@
     <div class="flex pt-16 flex-1">
         <!-- Sidebar Navigation Menu -->
         <aside class="w-64 bg-slate-900 border-l border-slate-800 fixed right-0 top-16 bottom-0 z-30 p-3 space-y-1 overflow-y-auto text-slate-300">
+            <div id="roleBadgeContainer" class="p-2 mb-2 bg-slate-800/80 rounded-xl border border-slate-700 text-center">
+                <span id="roleLabel" class="text-xs font-black text-amber-400">الصلاحية: المدير المالي (CFO)</span>
+            </div>
+
             <div class="text-[10px] font-black text-slate-500 px-3 pb-2 border-b border-slate-800 mb-1">مراكز القيادة والتحكم</div>
             <button onclick="switchTab('cfo_dashboard')" id="nav-cfo_dashboard" class="sidebar-item active w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all">
                 <i class="fas fa-crown w-5 text-center"></i><span>مركز قيادة المدير المالي</span>
@@ -320,7 +324,7 @@
 
 <script>
 // ==================== GLOBAL PERSISTENT STATE MANAGEMENT ====================
-const DB_KEY = 'INTELLIGENT_ERP_DATABASE_V3';
+const DB_KEY = 'INTELLIGENT_ERP_DATABASE_V4';
 
 const defaultDatabase = {
     setup: { orgName: 'مؤسسة الحلول الأمنية المرئية', vatNo: '300050000000003', currency: 'SAR', vatRate: 15, inventoryMethod: 'FIFO', fiscalStart: '2026-01-01', isConfigured: true },
@@ -426,15 +430,41 @@ function saveDatabase() {
     updateGlobalBadges();
 }
 
-// ==================== ROUTING & CONTROLLER ====================
+// ==================== ROLE PERMISSIONS & SWITCHING CONTROLLER ====================
 document.addEventListener('DOMContentLoaded', () => {
     if (!store.setup || !store.setup.isConfigured) {
         document.getElementById('setupModal').classList.remove('hidden');
     }
     document.getElementById('headerOrgTitle').innerText = store.setup.orgName;
+    document.getElementById('userRoleSelect').value = store.role || 'CFO';
+    updateRoleUI();
     updateGlobalBadges();
     renderTab();
 });
+
+function switchRole(role) {
+    store.role = role;
+    saveDatabase();
+    updateRoleUI();
+    renderTab();
+}
+
+function updateRoleUI() {
+    const roleMap = {
+        'CFO': 'الصلاحية: المدير المالي (CFO) - كامل الصلاحيات',
+        'ACCOUNTANT_MGR': 'الصلاحية: مدير الحسابات - اعتماد وإقفال الحسابات',
+        'ACCOUNTANT': 'الصلاحية: محاسب تنفيذي - إدخال العمليات كمسودات',
+        'AUDITOR': 'الصلاحية: المراجع الداخلي - عرض وتدقيق الاستثناءات فقط'
+    };
+    document.getElementById('roleLabel').innerText = roleMap[store.role] || roleMap['CFO'];
+
+    // التحكم في زر الاستيراد الرئيسي حسب الدور
+    const btnImport = document.getElementById('btnHeaderImport');
+    if (btnImport) {
+        if (store.role === 'AUDITOR') btnImport.classList.add('hidden');
+        else btnImport.classList.remove('hidden');
+    }
+}
 
 function saveSystemSetup() {
     store.setup = {
@@ -456,8 +486,6 @@ function updateGlobalBadges() {
     const missingBadge = document.getElementById('missingCountBadge');
     if (missingBadge) missingBadge.innerText = store.missingDataCenter.filter(m => m.status==='PENDING').length;
 }
-
-function switchRole(role) { store.role = role; saveDatabase(); renderTab(); }
 
 function switchTab(tab) {
     store.currentTab = tab;
@@ -512,7 +540,7 @@ function renderCfoDashboard(container) {
             <div class="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <div>
                     <h2 class="text-xl font-black text-slate-800"><i class="fas fa-crown text-amber-500 ml-2"></i> مركز قيادة المدير المالي (CFO Dashboard)</h2>
-                    <p class="text-xs text-slate-500 mt-1">تتبع صحة الوضع المالي، السيولة، الأرباح الصافية، والتوصيات المباشرة</p>
+                    <p class="text-xs text-slate-500 mt-1">شاشة الإستراتيجية العليا، التنبؤ بالسيولة والأرباح الصافية الحقيقية</p>
                 </div>
             </div>
 
@@ -568,13 +596,16 @@ function renderDataQualityPage(container) {
     container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-lg font-black">مركز جودة البيانات</h2><p class="text-xs text-slate-500 mt-2">إجمالي السجلات المعتمدة بالنظام: ${totalRecords} سجلات.</p></div>`;
 }
 
-// ==================== SALES MODULE ====================
+// ==================== SALES MODULE (ROLE SENSITIVE) ====================
 function renderSalesPage(container) {
+    const isAuditor = store.role === 'AUDITOR';
+    const isAccountantOnly = store.role === 'ACCOUNTANT';
+
     container.innerHTML = `
         <div class="space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-black text-slate-800">فواتير المبيعات والتركيبات الضريبية (ZATCA Phase 2)</h2>
-                <button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> إنشاء فاتورة مبيعات جديدة</button>
+                ${!isAuditor ? `<button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> إنشاء فاتورة مبيعات جديدة</button>` : ''}
             </div>
 
             <div id="salesFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
@@ -612,7 +643,7 @@ function renderSalesPage(container) {
                 <div class="flex justify-end gap-3 border-t pt-4">
                     <button onclick="hideSalesForm()" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">إلغاء</button>
                     <button onclick="saveSalesInvoice('DRAFT')" class="bg-amber-500 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs shadow-md">حفظ مسودة</button>
-                    <button onclick="saveSalesInvoice('POSTED')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md">اعتماد وتوليد القيد وخصم المخزن</button>
+                    ${!isAccountantOnly ? `<button onclick="saveSalesInvoice('POSTED')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md">اعتماد وتوليد القيد وخصم المخزن</button>` : ''}
                 </div>
             </div>
 
@@ -632,8 +663,8 @@ function renderSalesPage(container) {
                                 <td class="p-3.5 text-center font-black text-slate-900">${s.total.toLocaleString()} ${store.setup.currency}</td>
                                 <td class="p-3.5 text-center"><span class="${s.status==='POSTED'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'} px-2.5 py-1 rounded-full font-bold text-[10px]">${s.status==='POSTED'?'مُرحل ومطابق':'مسودة معلقة'}</span></td>
                                 <td class="p-3.5 text-center space-x-1 space-x-reverse">
-                                    <button onclick="showSalesForm(${idx})" class="text-blue-600 font-bold px-1.5"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteSalesInvoice(${idx})" class="text-red-500 font-bold px-1.5"><i class="fas fa-trash"></i></button>
+                                    ${!isAuditor ? `<button onclick="showSalesForm(${idx})" class="text-blue-600 font-bold px-1.5"><i class="fas fa-edit"></i></button>` : ''}
+                                    ${!isAuditor && !isAccountantOnly ? `<button onclick="deleteSalesInvoice(${idx})" class="text-red-500 font-bold px-1.5"><i class="fas fa-trash"></i></button>` : ''}
                                     <button onclick="printZatcaInvoice('${s.id}')" class="text-slate-700 font-bold px-1.5"><i class="fas fa-print"></i></button>
                                 </td>
                             </tr>
@@ -761,86 +792,32 @@ function deleteSalesInvoice(idx) {
     }
 }
 
-// ==================== PURCHASES, EXPENSES & VOUCHERS MODULES ====================
-function renderPurchasesPage(container) {
-    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">فواتير المشتريات والتوريد</h2><p class="text-xs text-slate-500">منظومة المشتريات مفعلة بالكامل مع الموردين والأصناف المخزنية.</p></div>`;
-}
+// ==================== OTHER FUNCTIONAL MODULES ====================
+function renderPurchasesPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">فواتير المشتريات والتوريد</h2><p class="text-xs text-slate-500">منظومة المشتريات مفعلة بالكامل.</p></div>`; }
+function renderExpensesPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">المصروفات التشغيلية</h2><p class="text-xs text-slate-500">تسجيل ومتابعة كافة المصروفات التشغيلية.</p></div>`; }
+function renderVouchersPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">سندات القبض والصرف</h2><p class="text-xs text-slate-500">تحصيل المقبوضات وصرف المستحقات مع التحديث المباشر للبنوك.</p></div>`; }
+function renderProjectsPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">إدارة المشاريع والعقود</h2><p class="text-xs text-slate-500">تتبع المشاريع والعقود ومقارنة التكاليف بالربحية.</p></div>`; }
+function renderMaintenancePage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">طلبات الصيانة والدعم الفني</h2><p class="text-xs text-slate-500">تتبع طلبات صيانة الكاميرات وأجهزة التسجيل.</p></div>`; }
+function renderCustodyPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">عهد وإرشادات الفنيين</h2><p class="text-xs text-slate-500">تسوية عهد السيارات والوقود والمواد الميدانية.</p></div>`; }
 
-function renderExpensesPage(container) {
-    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">المصروفات التشغيلية</h2><p class="text-xs text-slate-500">تسجيل ومتابعة كافة المصروفات وإصدار السندات المحاسبية.</p></div>`;
-}
-
-function renderVouchersPage(container) {
-    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">سندات القبض والصرف</h2><p class="text-xs text-slate-500">تحصيل المقبوضات وصرف المستحقات مع التحديث المباشر للبنوك.</p></div>`;
-}
-
-function renderProjectsPage(container) {
-    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">إدارة المشاريع والعقود</h2><p class="text-xs text-slate-500">تتبع المشاريع والعقود ومقارنة التكاليف بالربحية المعتمدة.</p></div>`;
-}
-
-function renderMaintenancePage(container) {
-    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">طلبات الصيانة والدعم الفني</h2><p class="text-xs text-slate-500">تتبع طلبات صيانة الكاميرات وأجهزة التسجيل ومستلزمات العمالة.</p></div>`;
-}
-
-function renderCustodyPage(container) {
-    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">عهد وإرشادات الفنيين</h2><p class="text-xs text-slate-500">تسوية عهد السيارات والوقود والمواد الميدانية للفنيين.</p></div>`;
-}
-
-// ==================== NEW MODULES: FIXED ASSETS, BUDGETING & CASH FORECAST ====================
 function renderAssetsPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">سجل الأصول الثابتة وحساب الإهلاك المتراكم</h2>
-                <button onclick="showAssetForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-plus ml-1"></i> إضافة أصل جديد</button>
-            </div>
-            <div id="assetFormArea" class="hidden bg-white p-6 rounded-3xl border space-y-4">
-                <div class="grid grid-cols-3 gap-4 text-xs">
-                    <div><label class="block font-bold mb-1">اسم الأصل *</label><input type="text" id="astName" value="جهاز كمبيوتر ومعدات تركيب" class="w-full border p-2 rounded-xl"></div>
-                    <div><label class="block font-bold mb-1">تكلفة الشراء *</label><input type="number" id="astCost" value="15000" class="w-full border p-2 rounded-xl"></div>
-                    <div><label class="block font-bold mb-1">الإهلاك المتراكم *</label><input type="number" id="astDep" value="3000" class="w-full border p-2 rounded-xl"></div>
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button onclick="hideAssetForm()" class="bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold">إلغاء</button>
-                    <button onclick="saveAsset()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">حفظ الأصل</button>
-                </div>
-            </div>
-            <div class="bg-white rounded-3xl border overflow-hidden">
+            <h2 class="text-xl font-black text-slate-800">سجل الأصول الثابتة وحساب الإهلاك المتراكم</h2>
+            <div class="bg-white rounded-3xl border overflow-hidden p-4">
                 <table class="w-full text-xs text-right">
                     <thead class="bg-slate-50 border-b font-bold">
-                        <tr><th class="p-3">الكود</th><th class="p-3">الأصل</th><th class="p-3 text-center">تكلفة الأصل</th><th class="p-3 text-center">مجمع الإهلاك</th><th class="p-3 text-center">صافي القيمة الدفترية</th><th class="p-3 text-center">حذف</th></tr>
+                        <tr><th class="p-3">الكود</th><th class="p-3">الأصل</th><th class="p-3 text-center">تكلفة الأصل</th><th class="p-3 text-center">مجمع الإهلاك</th><th class="p-3 text-center">صافي القيمة الدفترية</th></tr>
                     </thead>
                     <tbody>
-                        ${store.fixedAssets.map((a, idx) => `
-                            <tr class="border-b"><td class="p-3 font-mono font-bold text-blue-600">${a.id}</td><td class="p-3 font-bold">${a.name}</td><td class="p-3 text-center font-bold">${a.cost.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center text-red-600 font-bold">${a.accumDep.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center font-black text-emerald-600">${a.netVal.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center"><button onclick="deleteAsset(${idx})" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button></td></tr>
+                        ${store.fixedAssets.map(a => `
+                            <tr class="border-b"><td class="p-3 font-mono font-bold text-blue-600">${a.id}</td><td class="p-3 font-bold">${a.name}</td><td class="p-3 text-center font-bold">${a.cost.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center text-red-600 font-bold">${a.accumDep.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center font-black text-emerald-600">${a.netVal.toLocaleString()} ${store.setup.currency}</td></tr>
                         `).join('')}
                     </tbody>
                 </table>
             </div>
         </div>
     `;
-}
-
-function showAssetForm() { document.getElementById('assetFormArea').classList.remove('hidden'); }
-function hideAssetForm() { document.getElementById('assetFormArea').classList.add('hidden'); }
-
-function saveAsset() {
-    const name = document.getElementById('astName').value;
-    const cost = parseFloat(document.getElementById('astCost').value);
-    const accumDep = parseFloat(document.getElementById('astDep').value);
-    const netVal = cost - accumDep;
-    const id = 'AST-' + Math.floor(10 + Math.random() * 90);
-
-    store.fixedAssets.push({ id, name, date: new Date().toISOString().slice(0,10), cost, accumDep, netVal });
-    saveDatabase();
-    hideAssetForm();
-    renderAssetsPage(document.getElementById('contentArea'));
-}
-
-function deleteAsset(idx) {
-    store.fixedAssets.splice(idx, 1);
-    saveDatabase();
-    renderAssetsPage(document.getElementById('contentArea'));
 }
 
 function renderBudgetingPage(container) {
@@ -878,12 +855,10 @@ function renderCashForecastPage(container) {
                 <div class="bg-white p-5 rounded-3xl border"><span class="text-xs font-bold text-slate-400">الالتزامات القادمة (الموردين)</span><div class="text-2xl font-black text-red-600 mt-1">-${payables.toLocaleString()} ${store.setup.currency}</div></div>
                 <div class="bg-white p-5 rounded-3xl border"><span class="text-xs font-bold text-slate-400">الرصيد النقدي المتوقع نهاية الفترة</span><div class="text-2xl font-black text-slate-900 mt-1">${projectedCash.toLocaleString()} ${store.setup.currency}</div></div>
             </div>
-            ${projectedCash < 0 ? `<div class="p-4 bg-red-100 text-red-800 font-bold rounded-2xl">تنبيه حرج: يوجد عجز نقدي متوقع خلال الفترة المقبلة! يرجى تحصيل الديون المتبقية.</div>` : `<div class="p-4 bg-emerald-100 text-emerald-800 font-bold rounded-2xl">السيولة النقدية المتوقعة آمنة وممتازة كلياً.</div>`}
         </div>
     `;
 }
 
-// ==================== GENERAL ACCOUNTING MODULES ====================
 function renderCoaPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
@@ -927,18 +902,19 @@ function renderAuditPage(container) { container.innerHTML = `<div class="p-6 bg-
 function renderMonthClosePage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-lg font-black">جاهزية الإقفال الشهري</h2><p class="text-xs text-slate-500 mt-2">نسبة جاهزية الإقفال الشهري الحالي: 100%.</p></div>`; }
 
 function renderBackupPage(container) {
+    const isAuditor = store.role === 'AUDITOR';
     container.innerHTML = `
         <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
             <h2 class="text-lg font-black text-slate-800">النسخ الاحتياطي والأمان الدائم لقاعدة البيانات</h2>
             <div class="flex gap-3">
                 <button onclick="exportBackupJSON()" class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-download ml-1"></i> تصدير نسخة احتياطية (JSON)</button>
-                <button onclick="clearSystemData()" class="bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-trash ml-1"></i> إعادة تهيئة البيانات</button>
+                ${!isAuditor ? `<button onclick="clearSystemData()" class="bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-trash ml-1"></i> إعادة تهيئة البيانات</button>` : ''}
             </div>
         </div>
     `;
 }
 
-// ==================== MISSING DATA & IMPORT UTILS ====================
+// ==================== UTILS & MODALS ====================
 function toggleMissingDataModal() {
     const modal = document.getElementById('missingDataModal');
     modal.classList.toggle('hidden');
@@ -1053,7 +1029,6 @@ function executeFullSmartPosting() {
     renderTab();
 }
 
-// ==================== HELPER UTILS & PRINT ====================
 function getAccountBalance(code) { const a = store.coa.find(c => c.code === code); return a ? a.balance : 0; }
 function updateCoaBalance(code, amt) { const a = store.coa.find(c => c.code === code); if (a) a.balance += amt; }
 
@@ -1109,7 +1084,7 @@ function exportBackupJSON() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(store));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `ERP_GIANT_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("download", `ERP_ROLE_ENTERPRISE_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();

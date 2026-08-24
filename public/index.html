@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة المدير المحاسبي والمالي الذكي - Giant Enterprise ERP</title>
+    <title>المدير المحاسبي والمدير المالي الذكي - Giant Enterprise ERP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -37,14 +37,14 @@
 </head>
 <body class="antialiased">
 
-<!-- System Setup Modal -->
+<!-- Initial Setup Modal -->
 <div id="setupModal" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl p-8 space-y-6 border border-slate-200 fade-in">
         <div class="border-b pb-4 text-center">
             <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black mx-auto mb-3 shadow-lg">
                 <i class="fas fa-building-columns"></i>
             </div>
-            <h2 class="text-2xl font-black text-slate-800">تهيّئة نظام المدير المالي والمحاسبي العملاق</h2>
+            <h2 class="text-2xl font-black text-slate-800">تهيّئة نظام المدير المالي والمحاسبي المعتمد</h2>
             <p class="text-xs text-slate-500 mt-1">يرجى إدخال البيانات الحقيقية للمؤسسة للبدء في تشغيل الدورة المحاسبية المعتمدة</p>
         </div>
         <div class="grid grid-cols-2 gap-4 text-xs">
@@ -68,15 +68,15 @@
 </div>
 
 <div id="app" class="min-h-screen flex flex-col">
-    <!-- Top Header Navigation -->
+    <!-- Navigation Header -->
     <header class="bg-slate-900 text-white h-16 fixed top-0 left-0 right-0 z-50 px-6 flex items-center justify-between shadow-xl">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md">
-                <i class="fas fa-shield-halved"></i>
+                <i class="fas fa-video"></i>
             </div>
             <div>
                 <h1 class="font-black text-sm leading-tight" id="headerOrgTitle">مؤسسة الحلول الأمنية المرئية</h1>
-                <p class="text-[10px] text-blue-300">المدير المحاسبي والمدير المالي الذكي (Role-Based Enterprise ERP)</p>
+                <p class="text-[10px] text-blue-300">نظام إدارة الأنظمة الأمنية المحاسبي (Giant ERP v5.0)</p>
             </div>
         </div>
 
@@ -92,20 +92,19 @@
                 <i class="fas fa-brain"></i> المساعد AI
             </button>
             <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-xl text-xs border border-slate-700">
-                <span class="text-slate-400 font-bold px-2 text-[11px]">الصلاحية والوظيفة:</span>
+                <span class="text-slate-400 font-bold px-2 text-[11px]">الصلاحية:</span>
                 <select id="userRoleSelect" onchange="switchRole(this.value)" class="bg-slate-900 text-amber-400 font-bold text-xs p-1 rounded-lg focus:outline-none">
                     <option value="CFO">المدير المالي (CFO)</option>
-                    <option value="ACCOUNTANT_MGR">مدير الحسابات (Acc Manager)</option>
-                    <option value="ACCOUNTANT">محاسب تنفيذي (Accountant)</option>
-                    <option value="AUDITOR">المراجع الداخلي (Auditor)</option>
+                    <option value="ACCOUNTANT_MGR">مدير الحسابات</option>
+                    <option value="ACCOUNTANT">محاسب تنفيذي</option>
+                    <option value="AUDITOR">المراجع الداخلي</option>
                 </select>
             </div>
         </div>
     </header>
 
-    <!-- Main Workspace Layout -->
     <div class="flex pt-16 flex-1">
-        <!-- Sidebar Navigation Menu -->
+        <!-- Sidebar Navigation -->
         <aside class="w-64 bg-slate-900 border-l border-slate-800 fixed right-0 top-16 bottom-0 z-30 p-3 space-y-1 overflow-y-auto text-slate-300">
             <div id="roleBadgeContainer" class="p-2 mb-2 bg-slate-800/80 rounded-xl border border-slate-700 text-center">
                 <span id="roleLabel" class="text-xs font-black text-amber-400">الصلاحية: المدير المالي (CFO)</span>
@@ -181,7 +180,7 @@
             </button>
         </aside>
 
-        <!-- Dynamic Main Workspace View Area -->
+        <!-- Main Workspace View Area -->
         <main class="mr-64 flex-1 p-8 overflow-y-auto">
             <div id="contentArea" class="fade-in max-w-7xl mx-auto space-y-6"></div>
         </main>
@@ -303,7 +302,7 @@
     </div>
 </div>
 
-<!-- AI Financial Assistant Chat Modal -->
+<!-- AI Assistant Chat Modal -->
 <div id="aiModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col h-[550px] border border-slate-100">
         <div class="p-4 bg-slate-900 text-white flex justify-between items-center rounded-t-3xl">
@@ -324,7 +323,7 @@
 
 <script>
 // ==================== GLOBAL PERSISTENT STATE MANAGEMENT ====================
-const DB_KEY = 'INTELLIGENT_ERP_DATABASE_V4';
+const DB_KEY = 'INTELLIGENT_ERP_DATABASE_V5';
 
 const defaultDatabase = {
     setup: { orgName: 'مؤسسة الحلول الأمنية المرئية', vatNo: '300050000000003', currency: 'SAR', vatRate: 15, inventoryMethod: 'FIFO', fiscalStart: '2026-01-01', isConfigured: true },
@@ -332,23 +331,28 @@ const defaultDatabase = {
     currentTab: 'cfo_dashboard',
     importTarget: 'sales',
 
+    // شجرة الحسابات المحاسبية الكاملة والمخصصة لنشاط الأنظمة الأمنية
     coa: [
-        { code: '110100', name: 'الصندوق / النقدية', type: 'ASSET', subType: 'CURRENT', balance: 50000 },
-        { code: '110200', name: 'البنك الرئيسي', type: 'ASSET', subType: 'CURRENT', balance: 180000 },
-        { code: '110300', name: 'العملاء / الذمم المدينة', type: 'ASSET', subType: 'CURRENT', balance: 45000 },
-        { code: '110500', name: 'المخزون أجهزة وكاميرات', type: 'ASSET', subType: 'CURRENT', balance: 65000 },
+        { code: '110100', name: 'الصندوق الرئيسي / النقدية', type: 'ASSET', subType: 'CURRENT', balance: 50000 },
+        { code: '110200', name: 'بنك الراجحي الرئيسي', type: 'ASSET', subType: 'CURRENT', balance: 180000 },
+        { code: '110300', name: 'العملاء والذمم المدينة', type: 'ASSET', subType: 'CURRENT', balance: 45000 },
+        { code: '110501', name: 'مخزون كاميرات المراقبة', type: 'ASSET', subType: 'CURRENT', balance: 40000 },
+        { code: '110502', name: 'مخزون أجهزة التسجيل NVR/DVR', type: 'ASSET', subType: 'CURRENT', balance: 18000 },
+        { code: '110503', name: 'مخزون الكوابل والمستلزمات', type: 'ASSET', subType: 'CURRENT', balance: 7000 },
         { code: '110600', name: 'ضريبة المدخلات (مستردة 15%)', type: 'ASSET', subType: 'CURRENT', balance: 6000 },
-        { code: '120100', name: 'سيارات ومعدات التركيب', type: 'ASSET', subType: 'FIXED', balance: 120000 },
+        { code: '120100', name: 'سيارات ومعدات التركيب الميداني', type: 'ASSET', subType: 'FIXED', balance: 120000 },
         { code: '120900', name: 'مجمع إهلاك السيارات والمعدات', type: 'ASSET', subType: 'FIXED', balance: -20000 },
-        { code: '210100', name: 'الموردون / الذمم الدائنة', type: 'LIABILITY', subType: 'CURRENT', balance: 25000 },
+        { code: '210100', name: 'الموردون والذمم الدائنة', type: 'LIABILITY', subType: 'CURRENT', balance: 25000 },
         { code: '210200', name: 'ضريبة المخرجات (مستحقة 15%)', type: 'LIABILITY', subType: 'CURRENT', balance: 10500 },
-        { code: '310000', name: 'رأس المال', type: 'EQUITY', subType: 'EQUITY', balance: 200000 },
+        { code: '310000', name: 'رأس المال المعتمد', type: 'EQUITY', subType: 'EQUITY', balance: 200000 },
         { code: '320000', name: 'الأرباح المحتجزة', type: 'EQUITY', subType: 'EQUITY', balance: 180000 },
-        { code: '410000', name: 'إيرادات مبيعات الكاميرات والأجهزة', type: 'REVENUE', subType: 'OPERATING', balance: 130000 },
-        { code: '420000', name: 'إيرادات أعمال التركيب والصيانة', type: 'REVENUE', subType: 'OPERATING', balance: 35000 },
-        { code: '510000', name: 'تكلفة البضاعة المباعة (COGS)', type: 'COGS', subType: 'DIRECT', balance: 72000 },
-        { code: '610000', name: 'وقود ومصاريف سيارات الفنيين', type: 'EXPENSE', subType: 'OPERATING', balance: 5500 },
-        { code: '620000', name: 'رواتب ومنافع الموظفين', type: 'EXPENSE', subType: 'OPERATING', balance: 25000 }
+        { code: '410100', name: 'إيرادات مبيعات الكاميرات والأجهزة', type: 'REVENUE', subType: 'OPERATING', balance: 130000 },
+        { code: '410200', name: 'إيرادات مشاريع التركيب والشبكات', type: 'REVENUE', subType: 'OPERATING', balance: 85000 },
+        { code: '410300', name: 'إيرادات عقود الصيانة المبرمة', type: 'REVENUE', subType: 'OPERATING', balance: 35000 },
+        { code: '510100', name: 'تكلفة تكلفة البضاعة المباعة (COGS)', type: 'COGS', subType: 'DIRECT', balance: 72000 },
+        { code: '510200', name: 'تكلفة العمالة والمواد المباشرة للمشاريع', type: 'COGS', subType: 'DIRECT', balance: 50000 },
+        { code: '610100', name: 'وقود ومصاريف سيارات الفنيين', type: 'EXPENSE', subType: 'OPERATING', balance: 5500 },
+        { code: '620100', name: 'رواتب ومنافع موظفي المؤسسة', type: 'EXPENSE', subType: 'OPERATING', balance: 25000 }
     ],
 
     inventory: [
@@ -379,7 +383,7 @@ const defaultDatabase = {
     ],
 
     vouchers: [
-        { id: 'VCT-101', date: '2026-08-21', type: 'RECEIPT', party: 'شركة الأمان المحدودة', amount: 2000, account: 'البنك الرئيسي', memo: 'تحصيل دفعة من الفاتورة', status: 'POSTED' }
+        { id: 'VCT-101', date: '2026-08-21', type: 'RECEIPT', party: 'شركة الأمان المحدودة', amount: 2000, account: 'بنك الراجحي الرئيسي', memo: 'تحصيل دفعة من الفاتورة', status: 'POSTED' }
     ],
 
     projects: [
@@ -407,7 +411,7 @@ const defaultDatabase = {
     ],
 
     journals: [
-        { id: 'JV-2026-001', date: '2026-08-20', desc: 'إثبات فاتورة مبيعات INV-9901 - شركة الأمان', amount: 4600, status: 'POSTED', lines: [{ account: 'العملاء / الذمم المدينة', debit: 4600, credit: 0 }, { account: 'إيرادات مبيعات الكاميرات والأجهزة', debit: 0, credit: 4000 }, { account: 'ضريبة المخرجات (مستحقة 15%)', debit: 0, credit: 600 }] }
+        { id: 'JV-2026-001', date: '2026-08-20', desc: 'إثبات فاتورة مبيعات INV-9901 - شركة الأمان', amount: 4600, status: 'POSTED', lines: [{ account: 'العملاء والذمم المدينة', debit: 4600, credit: 0 }, { account: 'إيرادات مبيعات الكاميرات والأجهزة', debit: 0, credit: 4000 }, { account: 'ضريبة المخرجات (مستحقة 15%)', debit: 0, credit: 600 }] }
     ],
 
     importGridData: []
@@ -430,7 +434,7 @@ function saveDatabase() {
     updateGlobalBadges();
 }
 
-// ==================== ROLE PERMISSIONS & SWITCHING CONTROLLER ====================
+// ==================== ROLE CONTROLLER & SWITCHING ====================
 document.addEventListener('DOMContentLoaded', () => {
     if (!store.setup || !store.setup.isConfigured) {
         document.getElementById('setupModal').classList.remove('hidden');
@@ -458,7 +462,6 @@ function updateRoleUI() {
     };
     document.getElementById('roleLabel').innerText = roleMap[store.role] || roleMap['CFO'];
 
-    // التحكم في زر الاستيراد الرئيسي حسب الدور
     const btnImport = document.getElementById('btnHeaderImport');
     if (btnImport) {
         if (store.role === 'AUDITOR') btnImport.classList.add('hidden');
@@ -596,7 +599,7 @@ function renderDataQualityPage(container) {
     container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-lg font-black">مركز جودة البيانات</h2><p class="text-xs text-slate-500 mt-2">إجمالي السجلات المعتمدة بالنظام: ${totalRecords} سجلات.</p></div>`;
 }
 
-// ==================== SALES MODULE (ROLE SENSITIVE) ====================
+// ==================== SALES MODULE (ROLE CONTROLLED) ====================
 function renderSalesPage(container) {
     const isAuditor = store.role === 'AUDITOR';
     const isAccountantOnly = store.role === 'ACCOUNTANT';
@@ -774,8 +777,18 @@ function saveSalesInvoice(status) {
 
     if (status === 'POSTED') {
         updateCoaBalance('110300', total);
-        updateCoaBalance('410000', subtotal);
+        updateCoaBalance('410100', subtotal);
         updateCoaBalance('210200', vat);
+
+        store.journals.unshift({
+            id: 'JV-' + Math.floor(10000 + Math.random() * 90000),
+            date, desc: `إثبات فاتورة مبيعات ${invId} - العميل: ${customer}`, amount: total, status: 'POSTED',
+            lines: [
+                { account: 'العملاء والذمم المدينة', debit: total, credit: 0 },
+                { account: 'إيرادات مبيعات الكاميرات والأجهزة', debit: 0, credit: subtotal },
+                { account: 'ضريبة المخرجات (مستحقة 15%)', debit: 0, credit: vat }
+            ]
+        });
     }
 
     saveDatabase();
@@ -792,7 +805,7 @@ function deleteSalesInvoice(idx) {
     }
 }
 
-// ==================== OTHER FUNCTIONAL MODULES ====================
+// ==================== OTHER MODULES ====================
 function renderPurchasesPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">فواتير المشتريات والتوريد</h2><p class="text-xs text-slate-500">منظومة المشتريات مفعلة بالكامل.</p></div>`; }
 function renderExpensesPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">المصروفات التشغيلية</h2><p class="text-xs text-slate-500">تسجيل ومتابعة كافة المصروفات التشغيلية.</p></div>`; }
 function renderVouchersPage(container) { container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">سندات القبض والصرف</h2><p class="text-xs text-slate-500">تحصيل المقبوضات وصرف المستحقات مع التحديث المباشر للبنوك.</p></div>`; }
@@ -1019,7 +1032,7 @@ function executeFullSmartPosting() {
     store.importGridData.forEach(row => {
         store.salesInvoices.unshift({ id: row.docNum, date: row.date, customer: row.party, status: 'POSTED', items: [{ description: row.prodName, qty: row.qty, unitPrice: row.price, subtotal: row.subtotal, vat: row.vat, total: row.total }], subtotal: row.subtotal, vat: row.vat, total: row.total });
         updateCoaBalance('110300', row.total);
-        updateCoaBalance('410000', row.subtotal);
+        updateCoaBalance('410100', row.subtotal);
         updateCoaBalance('210200', row.vat);
     });
 
@@ -1074,7 +1087,7 @@ function sendAiQuery() {
     b.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white p-2.5 rounded-2xl max-w-[85%] font-medium">${q}</div></div>`;
     document.getElementById('aiInput').value = '';
     setTimeout(() => {
-        let resp = `استناداً إلى البيانات الحقيقية المحفوظة بالنظام:\n- إجمالي المبيعات المعتمدة: ${getAccountBalance('410000').toLocaleString()} ${store.setup.currency}.\n- السيولة المتوفرة بالبنك والصندوق: ${(getAccountBalance('110100')+getAccountBalance('110200')).toLocaleString()} ${store.setup.currency}.`;
+        let resp = `استناداً إلى البيانات الحقيقية المحفوظة بالنظام:\n- إجمالي المبيعات المعتمدة: ${getAccountBalance('410100').toLocaleString()} ${store.setup.currency}.\n- السيولة المتوفرة بالبنك والصندوق: ${(getAccountBalance('110100')+getAccountBalance('110200')).toLocaleString()} ${store.setup.currency}.`;
         b.innerHTML += `<div class="flex justify-start"><div class="bg-white p-3 rounded-2xl border text-slate-800 border-slate-200 shadow-sm max-w-[85%] whitespace-pre-line">${resp}</div></div>`;
         b.scrollTop = b.scrollHeight;
     }, 400);
@@ -1084,7 +1097,7 @@ function exportBackupJSON() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(store));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `ERP_ROLE_ENTERPRISE_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("download", `ERP_GIANT_FINAL_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();

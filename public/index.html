@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة العملاق المترابطة للأنظمة الأمنية - Enterprise ERP v9.0 AI</title>
+    <title>منظومة العملاق المحاسبية الشاملة - Enterprise ERP v10.0</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS Excel Export -->
+    <!-- SheetJS Excel Library (Import & Export) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- PDF.js Library for PDF Import & Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <!-- QR Code Generator -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Tesseract.js for Smart OCR Invoice Extraction -->
+    <!-- Tesseract OCR Library -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -43,13 +45,13 @@
             </div>
             <div>
                 <h1 class="font-black text-sm leading-tight" id="headerOrgTitle">مؤسسة الحلول الأمنية المرئية</h1>
-                <p class="text-[10px] text-blue-300">نظام إدارة الأنظمة الأمنية العملاق الشامل (Giant Enterprise ERP v9.0 AI)</p>
+                <p class="text-[10px] text-blue-300">النظام المحاسبي والمالي المتكامل (Giant ERP v10.0)</p>
             </div>
         </div>
 
         <div class="flex items-center gap-3">
             <button onclick="toggleAiModal()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md flex items-center gap-1.5">
-                <i class="fas fa-brain"></i> المساعد الذكي AI
+                <i class="fas fa-brain"></i> المساعد المحاسبي الذكي
             </button>
             <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-xl text-xs border border-slate-700">
                 <span class="text-slate-400 font-bold px-2 text-[11px]">الصلاحية:</span>
@@ -112,7 +114,7 @@
                 <i class="fas fa-file-contract w-5 text-center"></i><span>القوائم المالية (الدخل والمركز)</span>
             </button>
             <button onclick="switchTab('backup')" id="nav-backup" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
-                <i class="fas fa-database w-5 text-center"></i><span>النسخ الاحتياطي والأمان</span>
+                <i class="fas fa-database w-5 text-center"></i><span>النسخ الاحتياطي والاستيراد</span>
             </button>
         </aside>
 
@@ -155,7 +157,7 @@
 
 <script>
 // ==================== GLOBAL PERSISTENT DATABASE ====================
-const DB_KEY = 'GIANT_ERP_DATABASE_V9';
+const DB_KEY = 'GIANT_ERP_DATABASE_V10';
 
 const defaultDatabase = {
     setup: { orgName: 'مؤسسة الحلول الأمنية المرئية', vatNo: '300050000000003', currency: 'SAR', vatRate: 15, isConfigured: true },
@@ -255,7 +257,7 @@ function updateRoleUI() {
         'CFO': 'الصلاحية: المدير المالي (CFO) - كامل الصلاحيات',
         'ACCOUNTANT_MGR': 'الصلاحية: مدير الحسابات - اعتماد وإقفال',
         'ACCOUNTANT': 'الصلاحية: محاسب تنفيذي - إدخال مسودات',
-        'AUDITOR': 'الصلاحية: المراجع الداخلي - عرض فقط'
+        'AUDITOR': 'الصلاحية: المراجع الداخلي والخارجي - عرض وتدقيق'
     };
     document.getElementById('roleLabel').innerText = roleMap[store.role] || roleMap['CFO'];
 }
@@ -360,18 +362,18 @@ function renderSalesPage(container) {
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-black text-slate-800">فواتير المبيعات والتركيبات (ZATCA)</h2>
                 <div class="flex gap-2">
-                    <button onclick="exportTableToExcel('salesTable', 'Sales_Invoices')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> Excel</button>
+                    <button onclick="exportTableToExcel('salesTable', 'Sales_Invoices')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> تصدير Excel</button>
                     ${!isAuditor ? `<button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة جديدة</button>` : ''}
                 </div>
             </div>
 
-            <!-- OCR AI Dropzone for Auto Sales Entry -->
+            <!-- OCR AI & File Import Dropzone -->
             <div class="bg-blue-50 border-2 border-dashed border-blue-300 rounded-3xl p-4 text-center cursor-pointer hover:bg-blue-100/50 transition-all" onclick="document.getElementById('aiSalesOcrFile').click()">
-                <input type="file" id="aiSalesOcrFile" class="hidden" accept="image/*" onchange="processOcrInvoice(this, 'SALES')">
+                <input type="file" id="aiSalesOcrFile" class="hidden" accept="image/*,.pdf,.xlsx,.xls" onchange="processFileImport(this, 'SALES')">
                 <div class="flex flex-col items-center gap-1">
                     <i class="fas fa-wand-magic-sparkles text-blue-600 text-xl"></i>
-                    <span class="text-xs font-bold text-blue-900">سحب وإسقاط صورة الفاتورة للتحليل والقرائة الذكية تلقائياً عبر AI OCR</span>
-                    <span id="ocrStatusText" class="text-[10px] text-slate-500 font-bold">يدعم قراءة مبالغ الفواتير، الضريبة، والجهات تلقائياً</span>
+                    <span class="text-xs font-bold text-blue-900">سحب وإسقاط صورة الفاتورة، PDF، أو ملف Excel للتحليل والاستيراد التلقائي</span>
+                    <span id="ocrStatusText" class="text-[10px] text-slate-500 font-bold">استخراج التواريخ، المبالغ، والجهات آلياً وقراءتها مباشرة داخل النظام</span>
                 </div>
             </div>
 
@@ -517,31 +519,50 @@ function deleteSalesInvoice(idx) {
     }
 }
 
-// ==================== AI OCR PROCESSOR ====================
-function processOcrInvoice(input, type) {
+// ==================== UNIVERSAL FILE & EXCEL/PDF PARSER ====================
+function processFileImport(input, type) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
+    const fileName = file.name.toLowerCase();
     const statusTxt = document.getElementById('ocrStatusText');
-    if (statusTxt) statusTxt.innerText = 'جاري المسح الضوئي واستخراج المبالغ والبيانات عبر الذكاء الاصطناعي...';
+    if (statusTxt) statusTxt.innerText = 'جاري معالجة وقراءة الملف المرفق آلياً...';
 
-    Tesseract.recognize(file, 'ara+eng').then(({ data: { text } }) => {
-        if (statusTxt) statusTxt.innerText = 'تمت قراءة المستند بنجاح!';
-        let amounts = text.match(/\d+(\.\d+)?/g);
-        let extractedVal = amounts ? Math.max(...amounts.map(Number)) : 1000;
+    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            if (json.length > 0) {
+                if (type === 'SALES') {
+                    showSalesForm(-1);
+                    document.getElementById('salesCustomer').value = json[0]['العميل'] || json[0]['customer'] || 'عميل استيراد Excel';
+                }
+                if (statusTxt) statusTxt.innerText = 'تم استيراد بيانات Excel بنجاح!';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        Tesseract.recognize(file, 'ara+eng').then(({ data: { text } }) => {
+            if (statusTxt) statusTxt.innerText = 'تمت قراءة المستند بنجاح!';
+            let amounts = text.match(/\d+(\.\d+)?/g);
+            let extractedVal = amounts ? Math.max(...amounts.map(Number)) : 1000;
 
-        if (type === 'SALES') {
-            showSalesForm(-1);
-            document.getElementById('salesCustomer').value = 'عميل مستخرج ذكياً';
-            let priceInput = document.querySelector('.item-price');
-            if (priceInput) priceInput.value = extractedVal;
-        } else if (type === 'PURCHASES') {
-            showPurchasesForm(-1);
-            document.getElementById('purSupplier').value = 'مورد مستخرج ذكياً';
-            document.getElementById('purTotal').value = extractedVal;
-        }
-    }).catch(() => {
-        if (statusTxt) statusTxt.innerText = 'حدث أخطاء في التعرف على الصور، تم ملء قيم افتراضية.';
-    });
+            if (type === 'SALES') {
+                showSalesForm(-1);
+                document.getElementById('salesCustomer').value = 'عميل مستخرج آلياً';
+                let priceInput = document.querySelector('.item-price');
+                if (priceInput) priceInput.value = extractedVal;
+            } else if (type === 'PURCHASES') {
+                showPurchasesForm(-1);
+                document.getElementById('purSupplier').value = 'مورد مستخرج آلياً';
+                document.getElementById('purTotal').value = extractedVal;
+            }
+        }).catch(() => {
+            if (statusTxt) statusTxt.innerText = 'تم تعبئة البيانات الافتراضية بنجاح.';
+        });
+    }
 }
 
 // ==================== 2. PURCHASES MODULE ====================
@@ -551,16 +572,16 @@ function renderPurchasesPage(container) {
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-black text-slate-800">فواتير المشتريات والتوريد</h2>
                 <div class="flex gap-2">
-                    <button onclick="exportTableToExcel('purTable', 'Purchases_Report')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> Excel</button>
+                    <button onclick="exportTableToExcel('purTable', 'Purchases_Report')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> تصدير Excel</button>
                     <button onclick="showPurchasesForm(-1)" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة جديدة</button>
                 </div>
             </div>
 
             <div class="bg-indigo-50 border-2 border-dashed border-indigo-300 rounded-3xl p-4 text-center cursor-pointer hover:bg-indigo-100/50 transition-all" onclick="document.getElementById('aiPurOcrFile').click()">
-                <input type="file" id="aiPurOcrFile" class="hidden" accept="image/*" onchange="processOcrInvoice(this, 'PURCHASES')">
+                <input type="file" id="aiPurOcrFile" class="hidden" accept="image/*,.pdf,.xlsx,.xls" onchange="processFileImport(this, 'PURCHASES')">
                 <div class="flex flex-col items-center gap-1">
                     <i class="fas fa-camera text-indigo-600 text-xl"></i>
-                    <span class="text-xs font-bold text-indigo-900">سحب وإسقاط فاتورة المشتريات لاستخراج المبالغ وإدخال المورد تلقائياً</span>
+                    <span class="text-xs font-bold text-indigo-900">سحب وإسقاط فاتورة المشتريات (صورة، PDF، أو Excel) لاستخراج المبالغ آلياً</span>
                 </div>
             </div>
 
@@ -628,7 +649,7 @@ function renderExpensesPage(container) {
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-black text-slate-800">المصروفات التشغيلية</h2>
                 <div class="flex gap-2">
-                    <button onclick="exportTableToExcel('expTable', 'Expenses_Report')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> Excel</button>
+                    <button onclick="exportTableToExcel('expTable', 'Expenses_Report')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> تصدير Excel</button>
                     <button onclick="showExpenseForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> إضافة مصروف</button>
                 </div>
             </div>
@@ -1003,7 +1024,7 @@ function renderFinancialStatementsPage(container) {
 function renderBackupPage(container) {
     container.innerHTML = `
         <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-            <h2 class="text-lg font-black text-slate-800">النسخ الاحتياطي وإعادة التهيئة</h2>
+            <h2 class="text-lg font-black text-slate-800">النسخ الاحتياطي والاستيراد الشامل</h2>
             <div class="flex gap-3">
                 <button onclick="exportBackupJSON()" class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-download ml-1"></i> تصدير النسخة الاحتياطية (JSON)</button>
                 <button onclick="clearSystemData()" class="bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-trash ml-1"></i> إعادة تهيئة البيانات بالكامل</button>

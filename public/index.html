@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة العملاق للأنظمة الأمنية - Enterprise ERP v6.0</title>
+    <title>منظومة العملاق للأنظمة الأمنية - Fully Integrated Enterprise ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -13,8 +12,8 @@
         * { font-family: 'Tajawal', sans-serif; }
         body { background: #f8fafc; color: #1e293b; }
         .sidebar-item.active { background: linear-gradient(135deg, #0f172a, #1e293b); color: #38bdf8; border-right: 4px solid #38bdf8; }
-        .fade-in { animation: fadeIn 0.25s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
         @media print {
             body * { visibility: hidden; }
             #printableArea, #printableArea * { visibility: visible; }
@@ -37,7 +36,7 @@
             </div>
             <div>
                 <h1 class="font-black text-sm leading-tight" id="headerOrgTitle">مؤسسة الحلول الأمنية المرئية</h1>
-                <p class="text-[10px] text-blue-300">نظام إدارة الأنظمة الأمنية المحاسبي (Giant Enterprise ERP v6.0)</p>
+                <p class="text-[10px] text-blue-300">نظام إدارة الأنظمة الأمنية المحاسبي المترابط (Giant ERP v7.0)</p>
             </div>
         </div>
 
@@ -91,12 +90,6 @@
             <button onclick="switchTab('maintenance')" id="nav-maintenance" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
                 <i class="fas fa-screwdriver-wrench w-5 text-center"></i><span>طلبات الصيانة والدعم</span>
             </button>
-            <button onclick="switchTab('custody')" id="nav-custody" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
-                <i class="fas fa-user-gear w-5 text-center"></i><span>عهد وإرشادات الفنيين</span>
-            </button>
-            <button onclick="switchTab('assets')" id="nav-assets" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
-                <i class="fas fa-building w-5 text-center"></i><span>الأصول الثابتة والإهلاك</span>
-            </button>
 
             <div class="text-[10px] font-black text-slate-500 px-3 pt-3 pb-2 border-b border-slate-800 mb-1">التخطيط والمحاسبة الذكية</div>
             <button onclick="switchTab('coa')" id="nav-coa" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
@@ -140,7 +133,7 @@
         </div>
         <div id="aiChatBody" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
             <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] text-slate-800">
-                أهلاً بك! أنا المساعد المالي والمحاسبي. يمكنك الاستعلام المباشر عن حركة الحسابات، الأرباح، والسيولة النقدية.
+                أهلاً بك! أنا المساعد المالي المباشر للنظام. يمكنك الاستعلام المباشر عن الأرباح والسيولة والعملاء.
             </div>
         </div>
         <div class="p-3 bg-white border-t flex gap-2 rounded-b-3xl">
@@ -151,7 +144,7 @@
 </div>
 
 <script>
-const DB_KEY = 'GIANT_ERP_DATABASE_V6';
+const DB_KEY = 'GIANT_ERP_DATABASE_V7';
 
 const defaultDatabase = {
     setup: { orgName: 'مؤسسة الحلول الأمنية المرئية', vatNo: '300050000000003', currency: 'SAR', vatRate: 15, isConfigured: true },
@@ -164,8 +157,6 @@ const defaultDatabase = {
         { code: '110300', name: 'العملاء والذمم المدينة', type: 'ASSET', balance: 45000 },
         { code: '110501', name: 'مخزون كاميرات المراقبة والأجهزة', type: 'ASSET', balance: 65000 },
         { code: '110600', name: 'ضريبة المدخلات (مستردة 15%)', type: 'ASSET', balance: 6000 },
-        { code: '120100', name: 'سيارات ومعدات التركيب الميداني', type: 'ASSET', balance: 120000 },
-        { code: '120900', name: 'مجمع إهلاك السيارات والمعدات', type: 'ASSET', balance: -20000 },
         { code: '210100', name: 'الموردون والذمم الدائنة', type: 'LIABILITY', balance: 25000 },
         { code: '210200', name: 'ضريبة المخرجات (مستحقة 15%)', type: 'LIABILITY', balance: 10500 },
         { code: '310000', name: 'رأس المال المعتمد', type: 'EQUITY', balance: 200000 },
@@ -173,7 +164,7 @@ const defaultDatabase = {
         { code: '410100', name: 'إيرادات مبيعات الكاميرات والأجهزة', type: 'REVENUE', balance: 130000 },
         { code: '410200', name: 'إيرادات مشاريع التركيب والشبكات', type: 'REVENUE', balance: 85000 },
         { code: '410300', name: 'إيرادات عقود الصيانة المبرمة', type: 'REVENUE', balance: 35000 },
-        { code: '510100', name: 'تكلفة تكلفة البضاعة المباعة (COGS)', type: 'COGS', balance: 72000 },
+        { code: '510100', name: 'تكلفة البضاعة المباعة (COGS)', type: 'COGS', balance: 72000 },
         { code: '610100', name: 'وقود ومصاريف سيارات الفنيين', type: 'EXPENSE', balance: 5500 },
         { code: '620100', name: 'رواتب ومنافع موظفي المؤسسة', type: 'EXPENSE', balance: 25000 }
     ],
@@ -197,7 +188,7 @@ const defaultDatabase = {
     ],
 
     vouchers: [
-        { id: 'VCT-101', date: '2026-08-21', type: 'RECEIPT', party: 'شركة الأمان المحدودة', amount: 2000, account: 'بنك الراجحي الرئيسي', memo: 'تحصيل دفعة من الفاتورة', status: 'POSTED' }
+        { id: 'VCT-101', date: '2026-08-21', type: 'RECEIPT', party: 'شركة الأمان المحدودة', amount: 2000, account: '110200', memo: 'تحصيل دفعة من الفاتورة', status: 'POSTED' }
     ],
 
     projects: [
@@ -205,19 +196,11 @@ const defaultDatabase = {
     ],
 
     maintenanceRequests: [
-        { id: 'MNT-301', client: 'مؤسسة السلام الأمنية', device: 'NVR 16 Channel', issue: 'انقطاع البث الشبكي', technician: 'أحمد الفني', cost: 350, revenue: 600, status: 'POSTED' }
-    ],
-
-    techniciansCustody: [
-        { id: 'CUST-01', techName: 'أحمد الفني', amount: 2000, spent: 1250, remaining: 750, notes: 'عهدة وقود وسلالم', status: 'POSTED' }
-    ],
-
-    fixedAssets: [
-        { id: 'AST-01', name: 'سيارة تويوتا فنيين', date: '2025-01-10', cost: 60000, accumDep: 12000, netVal: 48000 }
+        { id: 'MNT-301', client: 'مؤسسة السلام الأمنية', device: 'NVR 16 Channel', issue: 'انقطاع البث الشبكي', technician: 'أحمد الفني', revenue: 600, status: 'POSTED' }
     ],
 
     journals: [
-        { id: 'JV-2026-001', date: '2026-08-20', desc: 'إثبات فاتورة مبيعات INV-9901 - شركة الأمان', amount: 4600, status: 'POSTED' }
+        { id: 'JV-2026-001', date: '2026-08-20', desc: 'إثبات فاتورة مبيعات INV-9901 - شركة الأمان', amount: 4600, status: 'POSTED', debitAcc: 'العملاء والذمم المدينة', creditAcc: 'إيرادات مبيعات الكاميرات' }
     ]
 };
 
@@ -280,8 +263,6 @@ function renderTab() {
         case 'vouchers': renderVouchersPage(area); break;
         case 'projects': renderProjectsPage(area); break;
         case 'maintenance': renderMaintenancePage(area); break;
-        case 'custody': renderCustodyPage(area); break;
-        case 'assets': renderAssetsPage(area); break;
         case 'coa': renderCoaPage(area); break;
         case 'journals': renderJournalsPage(area); break;
         case 'financial_statements': renderFinancialStatementsPage(area); break;
@@ -294,36 +275,33 @@ function updateCoaBalance(code, amt) { const a = store.coa.find(c => c.code === 
 
 // ==================== CFO & ACC DASHBOARDS ====================
 function renderCfoDashboard(container) {
-    let salesTotal = 0, purTotal = 0, expTotal = 0;
-    store.salesInvoices.filter(i => i.status === 'POSTED').forEach(i => salesTotal += i.subtotal);
-    store.purchaseInvoices.filter(i => i.status === 'POSTED').forEach(i => purTotal += i.subtotal);
-    store.expenses.filter(i => i.status === 'POSTED').forEach(i => expTotal += i.amount);
-
-    const grossProfit = salesTotal - (purTotal * 0.6);
-    const netProfit = grossProfit - expTotal;
-    const cashBalance = getAccountBalance('110100') + getAccountBalance('110200');
-    const custBalance = getAccountBalance('110300');
+    let salesTotal = getAccountBalance('410100') + getAccountBalance('410200') + getAccountBalance('410300');
+    let expTotal = getAccountBalance('610100') + getAccountBalance('620100');
+    let cogsTotal = getAccountBalance('510100');
+    let netProfit = salesTotal - cogsTotal - expTotal;
+    let cashBalance = getAccountBalance('110100') + getAccountBalance('110200');
+    let custBalance = getAccountBalance('110300');
 
     container.innerHTML = `
         <div class="space-y-6">
             <div class="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <div>
                     <h2 class="text-xl font-black text-slate-800"><i class="fas fa-crown text-amber-500 ml-2"></i> مركز قيادة المدير المالي (CFO Dashboard)</h2>
-                    <p class="text-xs text-slate-500 mt-1">إستراتيجية السيولة والأرباح المعتمدة للأنظمة الأمنية</p>
+                    <p class="text-xs text-slate-500 mt-1">الربط التلقائي المباشر لجميع العمليات المالية والحسابية</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">إجمالي المبيعات المعتمدة</span>
+                    <span class="text-xs font-bold text-slate-400">إجمالي الإيرادات المعتمدة</span>
                     <div class="text-2xl font-black text-slate-800 mt-1">${salesTotal.toLocaleString()} ${store.setup.currency}</div>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">صافي الأرباح المعتمدة</span>
+                    <span class="text-xs font-bold text-slate-400">صافي الأرباح الحقيقية</span>
                     <div class="text-2xl font-black ${netProfit>=0?'text-emerald-600':'text-red-600'} mt-1">${netProfit.toLocaleString()} ${store.setup.currency}</div>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">السيولة المتاحة (النقدية والبنك)</span>
+                    <span class="text-xs font-bold text-slate-400">السيولة النقدية والبنك</span>
                     <div class="text-2xl font-black text-blue-600 mt-1">${cashBalance.toLocaleString()} ${store.setup.currency}</div>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
@@ -341,11 +319,11 @@ function renderAccDashboard(container) {
             <h2 class="text-xl font-black text-slate-800"><i class="fas fa-list-check text-blue-600 ml-2"></i> مركز تحكم مدير الحسابات</h2>
             <div class="grid grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">القيود المحاسبية المرحّلة</span>
+                    <span class="text-xs font-bold text-slate-400">إجمالي القيود المرحّلة</span>
                     <div class="text-2xl font-black text-blue-600 mt-1">${store.journals.length} قيد</div>
                 </div>
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400">ميزان المراجعة العام</span>
+                    <span class="text-xs font-bold text-slate-400">حالة التوازن المحاسبي</span>
                     <div class="text-2xl font-black text-emerald-600 mt-1">متوازن 100%</div>
                 </div>
             </div>
@@ -361,15 +339,15 @@ function renderSalesPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">فواتير المبيعات والتركيبات الضريبية (ZATCA)</h2>
-                ${!isAuditor ? `<button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة مبيعات جديدة</button>` : ''}
+                <h2 class="text-xl font-black text-slate-800">فواتير المبيعات والتركيبات (ZATCA)</h2>
+                ${!isAuditor ? `<button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة جديدة</button>` : ''}
             </div>
 
             <div id="salesFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
                 <input type="hidden" id="salesEditIdx" value="-1">
                 <div class="grid grid-cols-3 gap-4 text-xs">
-                    <div><label class="block font-bold mb-1">اسم العميل *</label><input type="text" id="salesCustomer" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold" placeholder="شركة الأمان"></div>
-                    <div><label class="block font-bold mb-1">التاريخ *</label><input type="date" id="salesDate" value="${new Date().toISOString().slice(0,10)}" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
+                    <div><label class="block font-bold mb-1">اسم العميل *</label><input type="text" id="salesCustomer" class="w-full border p-2.5 rounded-xl font-bold" placeholder="شركة الأمان"></div>
+                    <div><label class="block font-bold mb-1">التاريخ *</label><input type="date" id="salesDate" value="${new Date().toISOString().slice(0,10)}" class="w-full border p-2.5 rounded-xl font-bold"></div>
                 </div>
 
                 <div class="space-y-2 border-t pt-4">
@@ -473,6 +451,11 @@ function saveSalesInvoice(status) {
         const lineVat = lineSubtotal * (store.setup.vatRate / 100);
         subtotal += lineSubtotal; vat += lineVat; total += (lineSubtotal + lineVat);
         items.push({ description: desc, qty, unitPrice, subtotal: lineSubtotal, vat: lineVat, total: lineSubtotal + lineVat });
+
+        if (status === 'POSTED') {
+            let item = store.inventory.find(i => i.name === desc);
+            if (item) item.qty -= qty;
+        }
     });
 
     let invId = editIdx >= 0 ? store.salesInvoices[editIdx].id : ('INV-' + Math.floor(1000 + Math.random() * 9000));
@@ -485,7 +468,7 @@ function saveSalesInvoice(status) {
         updateCoaBalance('110300', total);
         updateCoaBalance('410100', subtotal);
         updateCoaBalance('210200', vat);
-        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات فاتورة مبيعات ${invId}`, amount: total, status: 'POSTED' });
+        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات فاتورة مبيعات ${invId}`, amount: total, status: 'POSTED', debitAcc: 'العملاء والذمم المدينة', creditAcc: 'إيرادات مبيعات الكاميرات' });
     }
 
     saveDatabase();
@@ -495,7 +478,7 @@ function saveSalesInvoice(status) {
 
 function editSalesInvoice(idx) { showSalesForm(idx); }
 function deleteSalesInvoice(idx) {
-    if (confirm('هل أنت متأكد من حذف هذه الفاتورة؟')) {
+    if (confirm('هل أنت متأكد من حذف الفاتورة؟')) {
         store.salesInvoices.splice(idx, 1);
         saveDatabase();
         renderSalesPage(document.getElementById('contentArea'));
@@ -512,7 +495,6 @@ function renderPurchasesPage(container) {
             </div>
 
             <div id="purFormArea" class="hidden bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                <input type="hidden" id="purEditIdx" value="-1">
                 <div class="grid grid-cols-3 gap-4 text-xs">
                     <div><label class="block font-bold mb-1">اسم المورد *</label><input type="text" id="purSupplier" class="w-full border p-2.5 rounded-xl font-bold"></div>
                     <div><label class="block font-bold mb-1">التاريخ *</label><input type="date" id="purDate" value="${new Date().toISOString().slice(0,10)}" class="w-full border p-2.5 rounded-xl font-bold"></div>
@@ -532,9 +514,7 @@ function renderPurchasesPage(container) {
                     <tbody>
                         ${store.purchaseInvoices.map((p, idx) => `
                             <tr class="border-b"><td class="p-3.5 font-bold text-blue-600 font-mono">${p.id}</td><td class="p-3.5">${p.date}</td><td class="p-3.5 font-bold">${p.supplier}</td><td class="p-3.5 text-center font-black">${p.total.toLocaleString()} ${store.setup.currency}</td>
-                            <td class="p-3.5 text-center">
-                                <button onclick="deletePurchaseInvoice(${idx})" class="text-red-500 font-bold px-1.5"><i class="fas fa-trash"></i></button>
-                            </td></tr>
+                            <td class="p-3.5 text-center"><button onclick="deletePurchaseInvoice(${idx})" class="text-red-500 font-bold px-1.5"><i class="fas fa-trash"></i></button></td></tr>
                         `).join('')}
                     </tbody>
                 </table>
@@ -557,6 +537,8 @@ function savePurchaseInvoice() {
     updateCoaBalance('110501', subtotal);
     updateCoaBalance('110600', vat);
     updateCoaBalance('210100', total);
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات فاتورة مشتريات ${id}`, amount: total, status: 'POSTED', debitAcc: 'المخزون والضريبة', creditAcc: 'الموردون' });
+
     saveDatabase();
     hidePurchasesForm();
     renderPurchasesPage(document.getElementById('contentArea'));
@@ -617,6 +599,8 @@ function saveExpense() {
     store.expenses.unshift({ id, date, category, amount, memo, status: 'POSTED' });
     updateCoaBalance('610100', amount);
     updateCoaBalance('110100', -amount);
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `مصروف تشغيلي: ${memo}`, amount, status: 'POSTED', debitAcc: 'المصروفات التشغيلية', creditAcc: 'الصندوق' });
+
     saveDatabase();
     hideExpenseForm();
     renderExpensesPage(document.getElementById('contentArea'));
@@ -678,9 +662,11 @@ function saveVoucher() {
     if (type === 'RECEIPT') {
         updateCoaBalance('110200', amount);
         updateCoaBalance('110300', -amount);
+        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `سند قبض من: ${party}`, amount, status: 'POSTED', debitAcc: 'البنك الرئيسي', creditAcc: 'العملاء' });
     } else {
         updateCoaBalance('210100', -amount);
         updateCoaBalance('110200', -amount);
+        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `سند صرف إلى: ${party}`, amount, status: 'POSTED', debitAcc: 'الموردون', creditAcc: 'البنك الرئيسي' });
     }
     saveDatabase();
     hideVoucherForm();
@@ -712,7 +698,7 @@ function renderProjectsPage(container) {
                 </div>
                 <div class="flex justify-end gap-3 border-t pt-4">
                     <button onclick="hideProjectForm()" class="bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold">إلغاء</button>
-                    <button onclick="saveProject()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">حفظ المشروع</button>
+                    <button onclick="saveProject()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">حفظ وترحيل المشروع</button>
                 </div>
             </div>
 
@@ -740,9 +726,12 @@ function saveProject() {
     const totalCost = parseFloat(document.getElementById('prjCost').value) || 0;
     const profit = contractVal - totalCost;
     const id = 'PRJ-' + Math.floor(100 + Math.random() * 900);
+    const date = new Date().toISOString().slice(0,10);
 
     store.projects.unshift({ id, title, client, contractVal, totalCost, profit, status: 'POSTED' });
     updateCoaBalance('410200', contractVal);
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات عقد مشروع: ${title}`, amount: contractVal, status: 'POSTED', debitAcc: 'العملاء', creditAcc: 'إيرادات العقود والمشاريع' });
+
     saveDatabase();
     hideProjectForm();
     renderProjectsPage(document.getElementById('contentArea'));
@@ -773,7 +762,7 @@ function renderMaintenancePage(container) {
                 </div>
                 <div class="flex justify-end gap-3 border-t pt-4">
                     <button onclick="hideMaintenanceForm()" class="bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold">إلغاء</button>
-                    <button onclick="saveMaintenance()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">حفظ بلاغ الصيانة</button>
+                    <button onclick="saveMaintenance()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">حفظ وترحيل الصيانة</button>
                 </div>
             </div>
 
@@ -800,9 +789,12 @@ function saveMaintenance() {
     const technician = document.getElementById('mntTech').value;
     const revenue = parseFloat(document.getElementById('mntRevenue').value) || 0;
     const id = 'MNT-' + Math.floor(100 + Math.random() * 900);
+    const date = new Date().toISOString().slice(0,10);
 
-    store.maintenanceRequests.unshift({ id, client, device, issue: 'صيانة ميدانية', technician, cost: 0, revenue, status: 'POSTED' });
+    store.maintenanceRequests.unshift({ id, client, device, issue: 'صيانة ميدانية', technician, revenue, status: 'POSTED' });
     updateCoaBalance('410300', revenue);
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إيراد صيانة - العميل: ${client}`, amount: revenue, status: 'POSTED', debitAcc: 'الصندوق / النقدية', creditAcc: 'إيرادات عقود الصيانة' });
+
     saveDatabase();
     hideMaintenanceForm();
     renderMaintenancePage(document.getElementById('contentArea'));
@@ -813,85 +805,6 @@ function deleteMaintenance(idx) {
         saveDatabase();
         renderMaintenancePage(document.getElementById('contentArea'));
     }
-}
-
-// ==================== 7. CUSTODY MODULE ====================
-function renderCustodyPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">عهد وإرشادات الفنيين الميدانيين</h2>
-                <button onclick="showCustodyForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> تسليم عهدة جديدة</button>
-            </div>
-
-            <div id="cstFormArea" class="hidden bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                <div class="grid grid-cols-3 gap-4 text-xs">
-                    <div><label class="block font-bold mb-1">اسم الفني *</label><input type="text" id="cstTech" class="w-full border p-2.5 rounded-xl font-bold"></div>
-                    <div><label class="block font-bold mb-1">مبلغ العهدة *</label><input type="number" id="cstAmount" class="w-full border p-2.5 rounded-xl font-bold"></div>
-                    <div><label class="block font-bold mb-1">ملاحظات *</label><input type="text" id="cstNotes" class="w-full border p-2.5 rounded-xl font-bold"></div>
-                </div>
-                <div class="flex justify-end gap-3 border-t pt-4">
-                    <button onclick="hideCustodyForm()" class="bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold">إلغاء</button>
-                    <button onclick="saveCustody()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">تسليم العهدة</button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b font-bold">
-                        <tr><th class="p-3.5">الرقم</th><th class="p-3.5">الفني</th><th class="p-3.5 text-center">المبلغ المسلم</th><th class="p-3.5 text-center">المصروف</th><th class="p-3.5 text-center">المتبقي</th><th class="p-3.5 text-center">حذف</th></tr>
-                    </thead>
-                    <tbody>
-                        ${store.techniciansCustody.map((c, idx) => `
-                            <tr class="border-b"><td class="p-3.5 font-bold font-mono text-blue-600">${c.id}</td><td class="p-3.5 font-bold">${c.techName}</td><td class="p-3.5 text-center font-bold">${c.amount.toLocaleString()} ${store.setup.currency}</td><td class="p-3.5 text-center font-bold text-red-600">${c.spent.toLocaleString()} ${store.setup.currency}</td><td class="p-3.5 text-center font-black text-emerald-600">${c.remaining.toLocaleString()} ${store.setup.currency}</td><td class="p-3.5 text-center"><button onclick="deleteCustody(${idx})" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button></td></tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-function showCustodyForm() { document.getElementById('cstFormArea').classList.remove('hidden'); }
-function hideCustodyForm() { document.getElementById('cstFormArea').classList.add('hidden'); }
-function saveCustody() {
-    const techName = document.getElementById('cstTech').value;
-    const amount = parseFloat(document.getElementById('cstAmount').value) || 0;
-    const notes = document.getElementById('cstNotes').value;
-    const id = 'CUST-' + Math.floor(10 + Math.random() * 90);
-
-    store.techniciansCustody.unshift({ id, techName, amount, spent: 0, remaining: amount, notes, status: 'POSTED' });
-    updateCoaBalance('110100', -amount);
-    saveDatabase();
-    hideCustodyForm();
-    renderCustodyPage(document.getElementById('contentArea'));
-}
-function deleteCustody(idx) {
-    if (confirm('هل أنت متأكد من الحذف؟')) {
-        store.techniciansCustody.splice(idx, 1);
-        saveDatabase();
-        renderCustodyPage(document.getElementById('contentArea'));
-    }
-}
-
-// ==================== 8. ASSETS MODULE ====================
-function renderAssetsPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">الأصول الثابتة وحساب الإهلاك المتراكم</h2>
-            <div class="bg-white rounded-3xl border overflow-hidden p-4">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b font-bold">
-                        <tr><th class="p-3">الكود</th><th class="p-3">الأصل</th><th class="p-3 text-center">تكلفة الأصل</th><th class="p-3 text-center">مجمع الإهلاك</th><th class="p-3 text-center">صافي القيمة الدفترية</th></tr>
-                    </thead>
-                    <tbody>
-                        ${store.fixedAssets.map(a => `
-                            <tr class="border-b"><td class="p-3 font-mono font-bold text-blue-600">${a.id}</td><td class="p-3 font-bold">${a.name}</td><td class="p-3 text-center font-bold">${a.cost.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center text-red-600 font-bold">${a.accumDep.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center font-black text-emerald-600">${a.netVal.toLocaleString()} ${store.setup.currency}</td></tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
 }
 
 // ==================== COA, JOURNALS & FINANCIAL STATEMENTS ====================
@@ -916,7 +829,7 @@ function renderCoaPage(container) {
 function renderJournalsPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">دفتر اليومية العامة والقيود المحاسبية</h2>
+            <h2 class="text-xl font-black text-slate-800">دفتر اليومية العامة والقيود المحاسبية التلقائية</h2>
             <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
                 <table class="w-full text-xs text-right">
                     <thead class="bg-slate-50 border-b font-bold"><tr><th class="p-3">رقم القيد</th><th class="p-3">التاريخ</th><th class="p-3">البيان والشرح</th><th class="p-3 text-center">المبلغ</th><th class="p-3 text-center">الحالة</th></tr></thead>
@@ -942,8 +855,8 @@ function renderFinancialStatementsPage(container) {
             <h2 class="text-xl font-black text-slate-800">القوائم المالية الختامية (قائمة الدخل)</h2>
             <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-3 max-w-xl mx-auto text-xs">
                 <div class="flex justify-between border-b pb-2"><span>إجمالي الإيرادات:</span><strong class="text-slate-800">${sales.toLocaleString()} ${store.setup.currency}</strong></div>
-                <div class="flex justify-between border-b pb-2"><span>خصم: تكلفة المبيعات (COGS):</span><strong class="text-red-600">-${cogs.toLocaleString()} ${store.setup.currency}</strong></div>
-                <div class="flex justify-between border-b pb-2"><span>خصم: المصروفات التشغيلية:</span><strong class="text-red-600">-${expenses.toLocaleString()} ${store.setup.currency}</strong></div>
+                <div class="flex justify-between border-b pb-2"><span>تكلفة المبيعات (COGS):</span><strong class="text-red-600">-${cogs.toLocaleString()} ${store.setup.currency}</strong></div>
+                <div class="flex justify-between border-b pb-2"><span>المصروفات التشغيلية:</span><strong class="text-red-600">-${expenses.toLocaleString()} ${store.setup.currency}</strong></div>
                 <div class="flex justify-between border-t-2 pt-3 text-sm font-black"><span>صافي الربح للفترة:</span><strong class="${netIncome>=0?'text-emerald-600':'text-red-600'}">${netIncome.toLocaleString()} ${store.setup.currency}</strong></div>
             </div>
         </div>
@@ -1004,7 +917,7 @@ function sendAiQuery() {
     b.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white p-2.5 rounded-2xl max-w-[85%] font-medium">${q}</div></div>`;
     document.getElementById('aiInput').value = '';
     setTimeout(() => {
-        let resp = `استناداً إلى الحسابات المعتمدة بالنظام:\n- إجمالي المبيعات: ${(getAccountBalance('410100')+getAccountBalance('410200')).toLocaleString()} ${store.setup.currency}.\n- السيولة المتاحة: ${(getAccountBalance('110100')+getAccountBalance('110200')).toLocaleString()} ${store.setup.currency}.`;
+        let resp = `استناداً إلى البيانات المعتمدة بالنظام:\n- إجمالي الإيرادات: ${(getAccountBalance('410100')+getAccountBalance('410200')+getAccountBalance('410300')).toLocaleString()} ${store.setup.currency}.\n- السيولة المتوفرة بالبنك والصندوق: ${(getAccountBalance('110100')+getAccountBalance('110200')).toLocaleString()} ${store.setup.currency}.`;
         b.innerHTML += `<div class="flex justify-start"><div class="bg-white p-3 rounded-2xl border text-slate-800 border-slate-200 shadow-sm max-w-[85%] whitespace-pre-line">${resp}</div></div>`;
         b.scrollTop = b.scrollHeight;
     }, 300);
@@ -1021,7 +934,7 @@ function exportBackupJSON() {
 }
 
 function clearSystemData() {
-    if (confirm('هل أنت متأكد من إعادة تهيئة وحذف البيانات؟')) {
+    if (confirm('هل أنت متأكد من إعادة تهيئة البيانات؟')) {
         localStorage.removeItem(DB_KEY);
         location.reload();
     }

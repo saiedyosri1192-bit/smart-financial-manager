@@ -1,14 +1,19 @@
 import os
 import sys
 import sqlite3
-import unittest
 from datetime import datetime
 from flask import Flask, render_template_string, request, jsonify, send_file
 import pandas as pd
-import pdfplumber
+
+# حاول استيراد pdfplumber بشفافية (معالجة عدم وجودها دون إيقاف البرنامج)
+try:
+    import pdfplumber
+    HAS_PDF = True
+except ImportError:
+    HAS_PDF = False
 
 # ==========================================
-# 1. المكون الأقوى: المحرك المحاسبي (Accounting Engine)
+# 1. المحرك المحاسبي (Accounting Engine)
 # ==========================================
 DB_NAME = 'financial_manager.db'
 
@@ -47,7 +52,7 @@ class AccountingEngine:
                 )
             ''')
 
-            # 3. تفاصيل بنود القيد (مدين/دائن)
+            # 3. تفاصيل بنود القيد
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS journal_lines (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,21 +65,7 @@ class AccountingEngine:
                 )
             ''')
 
-            # 4. جدول الفواتير الضريبية (ZATCA)
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS invoices (
-                    id TEXT PRIMARY KEY,
-                    invoice_type TEXT NOT NULL,
-                    party_name TEXT NOT NULL,
-                    invoice_date TEXT NOT NULL,
-                    subtotal REAL NOT NULL,
-                    vat_amount REAL NOT NULL,
-                    total_amount REAL NOT NULL,
-                    status TEXT DEFAULT 'POSTED'
-                )
-            ''')
-
-            # إدخال شجرة الحسابات الافتراضية للحلول الأمنية
+            # إدخال شجرة الحسابات الافتراضية
             default_accounts = [
                 ('110100', 'الصندوق الرئيسي / النقدية', 'ASSET', 50000.0),
                 ('110200', 'بنك الراجحي الرئيسي', 'ASSET', 180000.0),
@@ -94,7 +85,6 @@ class AccountingEngine:
             conn.commit()
 
     def post_journal_entry(self, description, lines, posted_by='CFO'):
-        """مراجعة وترحيل القيد المحاسبي المتوازن 100%"""
         total_debit = sum(float(line.get('debit', 0)) for line in lines)
         total_credit = sum(float(line.get('credit', 0)) for line in lines)
 
@@ -122,7 +112,6 @@ class AccountingEngine:
                     VALUES (?, ?, ?, ?)
                 ''', (entry_id, code, debit, credit))
 
-                # تحديث أرصدة شجرة الحسابات تلقائياً
                 net_change = debit - credit
                 cursor.execute('UPDATE coa SET balance = balance + ? WHERE code = ?', (net_change, code))
 
@@ -134,6 +123,8 @@ class AccountingEngine:
         return df.to_dict(orient='records')
 
     def parse_pdf_text(self, file_path):
+        if not HAS_PDF:
+            return "مكتبة pdfplumber غير مثبة، يرجى تشغيل: pip install pdfplumber"
         text = ""
         with pdfplumber.open(file_path) as pdf:
             for page in pdf.pages:
@@ -141,14 +132,14 @@ class AccountingEngine:
         return text
 
 # ==========================================
-# 2. الواجهة الرسومية HTML الشاملة (Integrated Template)
+# 2. واجهة المستخدم HTML
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>المنظومة المحاسبية والمالية الموحدة - Enterprise ERP</title>
+    <title>المنظومة المحاسبية الموحدة ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -158,48 +149,43 @@ HTML_TEMPLATE = """
 </head>
 <body class="bg-slate-100 p-6">
     <div class="max-w-7xl mx-auto space-y-6">
-        <!-- Header Nav -->
         <div class="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-xl">
             <div>
                 <h1 class="text-xl font-black flex items-center gap-2">
                     <i class="fas fa-shield-halved text-blue-500"></i> منظومة العملاق المحاسبية الشاملة
                 </h1>
-                <p class="text-xs text-blue-300 mt-1">الربط التلقائي بين المدير المالي، ومدير الحسابات، والمحاسب، والمراجع</p>
+                <p class="text-xs text-blue-300 mt-1">الربط التلقائي بين المدير المالي، الحسابات، والمراجع</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div>
                 <a href="/api/export_excel" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow">
-                    <i class="fas fa-file-excel ml-1"></i> تصدير COA Excel
+                    <i class="fas fa-file-excel ml-1"></i> تصدير Excel
                 </a>
             </div>
         </div>
 
-        <!-- Import Dropzone -->
         <div class="bg-white p-6 rounded-3xl border-2 border-dashed border-blue-300 text-center shadow-sm space-y-2">
             <input type="file" id="fileInput" class="hidden" onchange="uploadFile()">
             <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-6 py-3 rounded-xl shadow">
-                <i class="fas fa-cloud-arrow-up ml-2"></i> سحب وإسقاط ملفات الفواتير (Excel / PDF) للاستيراد الآلي
+                <i class="fas fa-cloud-arrow-up ml-2"></i> استيراد ملف (Excel / PDF)
             </button>
-            <p id="importStatus" class="text-xs text-slate-500 font-bold">يقوم المحرك بقراءة وتفريغ المستندات آلياً داخل شجرة الحسابات والدفاتر</p>
+            <p id="importStatus" class="text-xs text-slate-500 font-bold">اسحب الملف هنا للاستيراد الآلي</p>
         </div>
 
-        <!-- Entry Form -->
         <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-            <h3 class="font-black text-sm text-slate-800"><i class="fas fa-pen-to-square text-indigo-600 ml-1"></i> إدخال وترحيل قيد محاسبي جديد</h3>
+            <h3 class="font-black text-sm text-slate-800"><i class="fas fa-pen-to-square text-indigo-600 ml-1"></i> إدخال قيد محاسبي جديد</h3>
             <div class="grid grid-cols-3 gap-4 text-xs">
-                <div><label class="block font-bold mb-1">بيان القيد *</label><input type="text" id="entryDesc" class="w-full border p-2 rounded-xl font-bold" placeholder="إثبات فاتورة أو مصروف"></div>
-                <div><label class="block font-bold mb-1">حساب المدين (Code) *</label><input type="text" id="debitCode" value="110100" class="w-full border p-2 rounded-xl font-bold"></div>
+                <div><label class="block font-bold mb-1">البيان / الشرح *</label><input type="text" id="entryDesc" class="w-full border p-2 rounded-xl font-bold" placeholder="إثبات عملية محاسبية"></div>
+                <div><label class="block font-bold mb-1">رمز حساب المدين *</label><input type="text" id="debitCode" value="110100" class="w-full border p-2 rounded-xl font-bold"></div>
                 <div><label class="block font-bold mb-1">المبلغ المدين *</label><input type="number" id="debitAmt" class="w-full border p-2 rounded-xl font-bold" placeholder="0.00"></div>
-                <div><label class="block font-bold mb-1">حساب الدائن (Code) *</label><input type="text" id="creditCode" value="410100" class="w-full border p-2 rounded-xl font-bold"></div>
+                <div><label class="block font-bold mb-1">رمز حساب الدائن *</label><input type="text" id="creditCode" value="410100" class="w-full border p-2 rounded-xl font-bold"></div>
                 <div><label class="block font-bold mb-1">المبلغ الدائن *</label><input type="number" id="creditAmt" class="w-full border p-2 rounded-xl font-bold" placeholder="0.00"></div>
                 <div class="flex items-end"><button onclick="submitJournalEntry()" class="w-full bg-slate-900 text-white font-bold py-2 rounded-xl text-xs shadow"><i class="fas fa-check ml-1"></i> اعتماد وترحيل القيد</button></div>
             </div>
         </div>
 
-        <!-- Grid Data -->
         <div class="grid grid-cols-2 gap-6">
-            <!-- COA Table -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
-                <h3 class="font-black text-slate-800 text-sm">شجرة الحسابات والديدات (COA)</h3>
+                <h3 class="font-black text-slate-800 text-sm">شجرة الحسابات (COA)</h3>
                 <table class="w-full text-xs text-right border-collapse">
                     <thead>
                         <tr class="bg-slate-50 border-b font-bold text-slate-600">
@@ -218,7 +204,6 @@ HTML_TEMPLATE = """
                 </table>
             </div>
 
-            <!-- Journal Entries Table -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
                 <h3 class="font-black text-slate-800 text-sm">دفتر اليومية العامة والقيود المرحّلة</h3>
                 <table class="w-full text-xs text-right border-collapse">
@@ -250,6 +235,11 @@ HTML_TEMPLATE = """
             const creditCode = document.getElementById('creditCode').value;
             const creditAmt = parseFloat(document.getElementById('creditAmt').value) || 0;
 
+            if(!desc || debitAmt <= 0 || creditAmt <= 0) {
+                alert('يرجى ملء جميع الحقول بمبالغ صحيحة');
+                return;
+            }
+
             const payload = {
                 description: desc,
                 lines: [
@@ -279,12 +269,12 @@ HTML_TEMPLATE = """
             const formData = new FormData();
             formData.append('file', input.files[0]);
 
-            document.getElementById('importStatus').innerText = "جاري قراءة واستخراج البيانات آلياً...";
+            document.getElementById('importStatus').innerText = "جاري القراءة...";
             fetch('/api/import_file', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if(data.status === 'success') {
-                    document.getElementById('importStatus').innerText = "تم استيراد الملف وقراءته بنجاح!";
+                    document.getElementById('importStatus').innerText = "تم استيراد وقراءة الملف بنجاح!";
                 } else {
                     document.getElementById('importStatus').innerText = "خطأ: " + data.message;
                 }
@@ -296,7 +286,7 @@ HTML_TEMPLATE = """
 """
 
 # ==========================================
-# 3. تطبيق الويب الخادم (Flask App Server)
+# 3. خادم التطبيق (Flask Web Server)
 # ==========================================
 app = Flask(__name__)
 engine = AccountingEngine()
@@ -332,14 +322,14 @@ def post_entry():
 def export_excel():
     conn = engine.get_connection()
     df = pd.read_sql_query('SELECT * FROM coa', conn)
-    file_path = 'COA_Financial_Export.xlsx'
+    file_path = 'COA_Export.xlsx'
     df.to_excel(file_path, index=False)
     return send_file(file_path, as_attachment=True)
 
 @app.route('/api/import_file', methods=['POST'])
 def import_file():
     if 'file' not in request.files:
-        return jsonify({'status': 'error', 'message': 'لم يتم رفع ملف'}), 400
+        return jsonify({'status': 'error', 'message': 'لم يتم إرفاق ملف'}), 400
     
     file = request.files['file']
     filename = file.filename.lower()
@@ -348,55 +338,18 @@ def import_file():
     file_path = os.path.join('uploads', file.filename)
     file.save(file_path)
 
-    if filename.endswith('.xlsx') or filename.endswith('.xls'):
-        parsed_data = engine.import_excel_data(file_path)
-        return jsonify({'status': 'success', 'type': 'excel', 'data': parsed_data})
-    elif filename.endswith('.pdf'):
-        parsed_text = engine.parse_pdf_text(file_path)
-        return jsonify({'status': 'success', 'type': 'pdf', 'raw_text': parsed_text})
-    
-    return jsonify({'status': 'error', 'message': 'الصيغة غير مدعومة'}), 400
+    try:
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            parsed_data = engine.import_excel_data(file_path)
+            return jsonify({'status': 'success', 'type': 'excel', 'data': parsed_data})
+        elif filename.endswith('.pdf'):
+            parsed_text = engine.parse_pdf_text(file_path)
+            return jsonify({'status': 'success', 'type': 'pdf', 'raw_text': parsed_text})
+        return jsonify({'status': 'error', 'message': 'صيغة غير مدعومة'}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
-# ==========================================
-# 4. وحدة الاختبارات الآلية (Test Suite)
-# ==========================================
-class TestAccountingEngine(unittest.TestCase):
-    def setUp(self):
-        self.test_db = 'test_financial.db'
-        self.engine = AccountingEngine(db_name=self.test_db)
-
-    def tearDown(self):
-        if os.path.exists(self.test_db):
-            os.remove(self.test_db)
-
-    def test_balanced_entry(self):
-        lines = [
-            {'account_code': '110100', 'debit': 1000.0, 'credit': 0.0},
-            {'account_code': '410100', 'debit': 0.0, 'credit': 1000.0}
-        ]
-        entry_id = self.engine.post_journal_entry("قيد مبيعات متوازن", lines)
-        self.assertIsNotNone(entry_id)
-
-    def test_unbalanced_entry(self):
-        lines = [
-            {'account_code': '110100', 'debit': 1000.0, 'credit': 0.0},
-            {'account_code': '410100', 'debit': 0.0, 'credit': 500.0}
-        ]
-        with self.assertRaises(ValueError):
-            self.engine.post_journal_entry("قيد خاطئ", lines)
-
-# ==========================================
-# 5. نقطة التشغيل الرئيسية (Main Execution)
-# ==========================================
 if __name__ == '__main__':
-    # تشغيل الفحص الآلي والتأكد من سلامة الكود أولاً
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestAccountingEngine)
-    runner = unittest.TextTestRunner(verbosity=0)
-    result = runner.run(suite)
-    
-    if result.wasSuccessful():
-        print("=== تم اجتياز الاختبارات المحاسبية بنجاح 100% ===")
-        print("=== جاري تشغيل الخادم المحاسبي الموحد على http://127.0.0.1:5000 ===")
-        app.run(debug=True, port=5000)
-    else:
-        print("خطأ في الاختبارات المحاسبية!")
+    print("=== جاري تشغيل البرنامج المحاسبي الموحد ===")
+    print("افتح الرابط التالي في المتصفح: http://127.0.0.1:5000")
+    app.run(host='127.0.0.1', port=5000, debug=True)

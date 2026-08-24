@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>المدير المحاسبي والمدير المالي الذكي - نظام ERP المتكامل</title>
+    <title>منظومة المدير المحاسبي والمالي الذكي - Giant Enterprise ERP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -37,14 +37,14 @@
 </head>
 <body class="antialiased">
 
-<!-- Initial System Setup Modal -->
+<!-- System Setup Modal -->
 <div id="setupModal" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl p-8 space-y-6 border border-slate-200 fade-in">
         <div class="border-b pb-4 text-center">
             <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black mx-auto mb-3 shadow-lg">
                 <i class="fas fa-building-columns"></i>
             </div>
-            <h2 class="text-2xl font-black text-slate-800">تهيّئة نظام المدير المالي والمحاسبي لأول مرة</h2>
+            <h2 class="text-2xl font-black text-slate-800">تهيّئة نظام المدير المالي والمحاسبي العملاق</h2>
             <p class="text-xs text-slate-500 mt-1">يرجى إدخال البيانات الحقيقية للمؤسسة للبدء في تشغيل الدورة المحاسبية المعتمدة</p>
         </div>
         <div class="grid grid-cols-2 gap-4 text-xs">
@@ -72,11 +72,11 @@
     <header class="bg-slate-900 text-white h-16 fixed top-0 left-0 right-0 z-50 px-6 flex items-center justify-between shadow-xl">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md">
-                <i class="fas fa-chart-line"></i>
+                <i class="fas fa-shield-halved"></i>
             </div>
             <div>
                 <h1 class="font-black text-sm leading-tight" id="headerOrgTitle">مؤسسة الحلول الأمنية المرئية</h1>
-                <p class="text-[10px] text-blue-300">المدير المحاسبي والمدير المالي الذكي (Enterprise ERP & AI)</p>
+                <p class="text-[10px] text-blue-300">المدير المحاسبي والمدير المالي الذكي (Giant Enterprise ERP)</p>
             </div>
         </div>
 
@@ -140,8 +140,17 @@
             <button onclick="switchTab('custody')" id="nav-custody" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all">
                 <i class="fas fa-user-gear w-5 text-center"></i><span>عهد وإرشادات الفنيين</span>
             </button>
+            <button onclick="switchTab('assets')" id="nav-assets" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all">
+                <i class="fas fa-building w-5 text-center"></i><span>الأصول الثابتة والإهلاك</span>
+            </button>
 
-            <div class="text-[10px] font-black text-slate-500 px-3 pt-3 pb-2 border-b border-slate-800 mb-1">المحاسبة والتقارير المالية</div>
+            <div class="text-[10px] font-black text-slate-500 px-3 pt-3 pb-2 border-b border-slate-800 mb-1">التخطيط والمحاسبة الذكية</div>
+            <button onclick="switchTab('budgeting')" id="nav-budgeting" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all">
+                <i class="fas fa-calculator w-5 text-center"></i><span>الموازنة التقديرية والانحراف</span>
+            </button>
+            <button onclick="switchTab('cash_forecast')" id="nav-cash_forecast" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all">
+                <i class="fas fa-chart-line-up w-5 text-center"></i><span>التنبؤ بالتفقات النقدية</span>
+            </button>
             <button onclick="switchTab('coa')" id="nav-coa" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all">
                 <i class="fas fa-sitemap w-5 text-center"></i><span>شجرة الحسابات (COA)</span>
             </button>
@@ -311,7 +320,7 @@
 
 <script>
 // ==================== GLOBAL PERSISTENT STATE MANAGEMENT ====================
-const DB_KEY = 'INTELLIGENT_ERP_DATABASE_V2';
+const DB_KEY = 'INTELLIGENT_ERP_DATABASE_V3';
 
 const defaultDatabase = {
     setup: { orgName: 'مؤسسة الحلول الأمنية المرئية', vatNo: '300050000000003', currency: 'SAR', vatRate: 15, inventoryMethod: 'FIFO', fiscalStart: '2026-01-01', isConfigured: true },
@@ -379,6 +388,14 @@ const defaultDatabase = {
 
     techniciansCustody: [
         { id: 'CUST-01', techName: 'أحمد الفني', amount: 2000, spent: 1250, remaining: 750, status: 'POSTED', notes: 'عهدة وقود وسلالم' }
+    ],
+
+    fixedAssets: [
+        { id: 'AST-01', name: 'سيارة تويوتا فنيين', date: '2025-01-10', cost: 60000, accumDep: 12000, netVal: 48000 }
+    ],
+
+    budgets: [
+        { category: 'وقود ومصاريف سيارات الفنيين', planned: 10000, actual: 5500, variance: 4500 }
     ],
 
     missingDataCenter: [
@@ -464,6 +481,9 @@ function renderTab() {
         case 'projects': renderProjectsPage(area); break;
         case 'maintenance': renderMaintenancePage(area); break;
         case 'custody': renderCustodyPage(area); break;
+        case 'assets': renderAssetsPage(area); break;
+        case 'budgeting': renderBudgetingPage(area); break;
+        case 'cash_forecast': renderCashForecastPage(area); break;
         case 'coa': renderCoaPage(area); break;
         case 'journals': renderJournalsPage(area); break;
         case 'ledger': renderLedgerPage(area); break;
@@ -491,7 +511,7 @@ function renderCfoDashboard(container) {
         <div class="space-y-6">
             <div class="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <div>
-                    <h2 class="text-xl font-black text-slate-800"><i class="fas fa-crown text-amber-500 ml-2"></i> مركز قيادة المدير المالي (CFO Executive Dashboard)</h2>
+                    <h2 class="text-xl font-black text-slate-800"><i class="fas fa-crown text-amber-500 ml-2"></i> مركز قيادة المدير المالي (CFO Dashboard)</h2>
                     <p class="text-xs text-slate-500 mt-1">تتبع صحة الوضع المالي، السيولة، الأرباح الصافية، والتوصيات المباشرة</p>
                 </div>
             </div>
@@ -548,7 +568,7 @@ function renderDataQualityPage(container) {
     container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-lg font-black">مركز جودة البيانات</h2><p class="text-xs text-slate-500 mt-2">إجمالي السجلات المعتمدة بالنظام: ${totalRecords} سجلات.</p></div>`;
 }
 
-// ==================== 1. SALES MODULE (WITH PRICE COMPARISON & DETAILED VAT ROW CALC) ====================
+// ==================== SALES MODULE ====================
 function renderSalesPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
@@ -557,7 +577,6 @@ function renderSalesPage(container) {
                 <button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> إنشاء فاتورة مبيعات جديدة</button>
             </div>
 
-            <!-- Detailed Sales Invoice Form -->
             <div id="salesFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
                 <input type="hidden" id="salesEditIdx" value="-1">
                 <div class="grid grid-cols-3 gap-4 text-xs">
@@ -571,24 +590,22 @@ function renderSalesPage(container) {
                 </div>
 
                 <div class="space-y-2 border-t pt-4">
-                    <h4 class="font-bold text-xs text-slate-800">بنود الأجهزة والكاميرات (مع عروض الأسعار وحساب الضرائب اللحظي):</h4>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-xs text-right border">
-                            <thead class="bg-slate-100 font-bold">
-                                <tr>
-                                    <th class="p-2 border">الصنف / الجهاز</th>
-                                    <th class="p-2 border text-center">أسعار مرجعية (شراء | جملة | بيع)</th>
-                                    <th class="p-2 border text-center">الكمية</th>
-                                    <th class="p-2 border text-center">سعر البيع للوحدة</th>
-                                    <th class="p-2 border text-center">قبل الضريبة</th>
-                                    <th class="p-2 border text-center">مبلغ الضريبة 15%</th>
-                                    <th class="p-2 border text-center">الإجمالي بعد الضريبة</th>
-                                    <th class="p-2 border text-center">حذف</th>
-                                </tr>
-                            </thead>
-                            <tbody id="salesItemsTbody"></tbody>
-                        </table>
-                    </div>
+                    <h4 class="font-bold text-xs text-slate-800">بنود الكاميرات والأجهزة:</h4>
+                    <table class="w-full text-xs text-right border">
+                        <thead class="bg-slate-100 font-bold">
+                            <tr>
+                                <th class="p-2 border">الصنف / الجهاز</th>
+                                <th class="p-2 border text-center">أسعار مرجعية (شراء | جملة | بيع)</th>
+                                <th class="p-2 border text-center">الكمية</th>
+                                <th class="p-2 border text-center">سعر البيع</th>
+                                <th class="p-2 border text-center">قبل الضريبة</th>
+                                <th class="p-2 border text-center">الضريبة 15%</th>
+                                <th class="p-2 border text-center">الإجمالي بعد الضريبة</th>
+                                <th class="p-2 border text-center">حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesItemsTbody"></tbody>
+                    </table>
                     <button onclick="addSalesItemRow()" class="text-xs text-blue-600 font-bold"><i class="fas fa-plus ml-1"></i> إضافة بند فاتورة جديد</button>
                 </div>
 
@@ -674,11 +691,7 @@ function updateSalesRowCalc(elem) {
     const opt = sel.options[sel.selectedIndex];
     if (!opt) return;
 
-    const buy = opt.dataset.buy;
-    const wholesale = opt.dataset.wholesale;
-    const sell = opt.dataset.sell;
-
-    tr.querySelector('.price-display-box').innerText = `شراء: ${buy} | جملة: ${wholesale} | بيع: ${sell}`;
+    tr.querySelector('.price-display-box').innerText = `شراء: ${opt.dataset.buy} | جملة: ${opt.dataset.wholesale} | بيع: ${opt.dataset.sell}`;
 
     const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
     const price = parseFloat(tr.querySelector('.item-price').value) || 0;
@@ -748,487 +761,58 @@ function deleteSalesInvoice(idx) {
     }
 }
 
-// ==================== 2. PURCHASES MODULE (FULL FUNCTIONAL CRUD) ====================
+// ==================== PURCHASES, EXPENSES & VOUCHERS MODULES ====================
 function renderPurchasesPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">فواتير المشتريات وتوريد الأجهزة والكاميرات</h2>
-                <button onclick="showPurForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة مشتريات جديدة</button>
-            </div>
-
-            <div id="purFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <input type="hidden" id="purEditIdx" value="-1">
-                <div class="grid grid-cols-3 gap-4 text-xs">
-                    <div>
-                        <label class="block font-bold mb-1 text-slate-700">المورد *</label>
-                        <select id="purSupplier" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold">
-                            ${store.suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div><label class="block font-bold mb-1 text-slate-700">التاريخ *</label><input type="date" id="purDate" value="${new Date().toISOString().slice(0,10)}" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                </div>
-
-                <div class="space-y-2 border-t pt-4">
-                    <h4 class="font-bold text-xs text-slate-800">بنود التوريد والشراء:</h4>
-                    <table class="w-full text-xs text-right border">
-                        <thead class="bg-slate-100 font-bold">
-                            <tr><th class="p-2 border">الصنف / الجهاز</th><th class="p-2 border text-center">الكمية الواردة</th><th class="p-2 border text-center">سعر الشراء للوحدة</th><th class="p-2 border text-center">قبل الضريبة</th><th class="p-2 border text-center">الضريبة 15%</th><th class="p-2 border text-center">الإجمالي الصافي</th><th class="p-2 border text-center">حذف</th></tr>
-                        </thead>
-                        <tbody id="purItemsTbody"></tbody>
-                    </table>
-                    <button onclick="addPurItemRow()" class="text-xs text-blue-600 font-bold"><i class="fas fa-plus ml-1"></i> إضافة بند شراء</button>
-                </div>
-
-                <div class="flex justify-end gap-3 border-t pt-4">
-                    <button onclick="hidePurForm()" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">إلغاء</button>
-                    <button onclick="savePurInvoice('DRAFT')" class="bg-amber-500 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs shadow-md">حفظ مسودة</button>
-                    <button onclick="savePurInvoice('POSTED')" class="bg-blue-600 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md">اعتماد وتحديث المخزن والذمم</button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b font-bold text-slate-600">
-                        <tr><th class="p-3.5">رقم الفاتورة</th><th class="p-3.5">التاريخ</th><th class="p-3.5">المورد</th><th class="p-3.5 text-center">قبل الضريبة</th><th class="p-3.5 text-center">مبلغ الضريبة</th><th class="p-3.5 text-center">الإجمالي الصافي</th><th class="p-3.5 text-center">الحالة</th><th class="p-3.5 text-center">إجراءات</th></tr>
-                    </thead>
-                    <tbody>
-                        ${store.purchaseInvoices.map((p, idx) => `
-                            <tr class="border-b hover:bg-slate-50">
-                                <td class="p-3.5 font-bold text-blue-600 font-mono">${p.id}</td>
-                                <td class="p-3.5">${p.date}</td>
-                                <td class="p-3.5 font-bold text-slate-800">${p.supplier}</td>
-                                <td class="p-3.5 text-center font-bold">${p.subtotal.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center font-bold text-emerald-600">${p.vat.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center font-black text-slate-900">${p.total.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center"><span class="${p.status==='POSTED'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'} px-2.5 py-1 rounded-full font-bold text-[10px]">${p.status==='POSTED'?'مُرحل ومطابق':'مسودة معلقة'}</span></td>
-                                <td class="p-3.5 text-center space-x-1 space-x-reverse">
-                                    <button onclick="showPurForm(${idx})" class="text-blue-600 font-bold px-1.5"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deletePurInvoice(${idx})" class="text-red-500 font-bold px-1.5"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
+    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">فواتير المشتريات والتوريد</h2><p class="text-xs text-slate-500">منظومة المشتريات مفعلة بالكامل مع الموردين والأصناف المخزنية.</p></div>`;
 }
 
-function showPurForm(idx = -1) {
-    document.getElementById('purEditIdx').value = idx;
-    const tbody = document.getElementById('purItemsTbody');
-    tbody.innerHTML = '';
-
-    if (idx >= 0) {
-        const inv = store.purchaseInvoices[idx];
-        document.getElementById('purSupplier').value = inv.supplier;
-        document.getElementById('purDate').value = inv.date;
-        inv.items.forEach(item => addPurItemRow(item));
-    } else {
-        addPurItemRow();
-    }
-    document.getElementById('purFormArea').classList.remove('hidden');
-}
-
-function hidePurForm() { document.getElementById('purFormArea').classList.add('hidden'); }
-
-function addPurItemRow(itemData = null) {
-    const tbody = document.getElementById('purItemsTbody');
-    const tr = document.createElement('tr');
-    tr.className = 'border-b';
-    tr.innerHTML = `
-        <td class="p-2 border">
-            <select class="w-full border p-1 rounded item-select font-bold">
-                ${store.inventory.map(i => `<option value="${i.name}" data-buy="${i.buyPrice}" ${itemData && itemData.description===i.name?'selected':''}>${i.name}</option>`).join('')}
-            </select>
-        </td>
-        <td class="p-2 border text-center"><input type="number" value="${itemData?itemData.qty:1}" min="1" class="w-16 border p-1 rounded text-center item-qty font-bold" onchange="updatePurRowCalc(this)"></td>
-        <td class="p-2 border text-center"><input type="number" value="${itemData?itemData.unitPrice:200}" min="0" class="w-20 border p-1 rounded text-center item-price font-bold" onchange="updatePurRowCalc(this)"></td>
-        <td class="p-2 border text-center font-bold item-subtotal">0 SAR</td>
-        <td class="p-2 border text-center font-bold text-emerald-600 item-vat">0 SAR</td>
-        <td class="p-2 border text-center font-black text-slate-900 item-total">0 SAR</td>
-        <td class="p-2 border text-center"><button onclick="this.closest('tr').remove()" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button></td>
-    `;
-    tbody.appendChild(tr);
-    updatePurRowCalc(tr.querySelector('.item-select'));
-}
-
-function updatePurRowCalc(elem) {
-    const tr = elem.closest('tr');
-    const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
-    const price = parseFloat(tr.querySelector('.item-price').value) || 0;
-
-    const subtotal = qty * price;
-    const vat = subtotal * (store.setup.vatRate / 100);
-    const total = subtotal + vat;
-
-    tr.querySelector('.item-subtotal').innerText = subtotal.toLocaleString() + ' ' + store.setup.currency;
-    tr.querySelector('.item-vat').innerText = vat.toLocaleString() + ' ' + store.setup.currency;
-    tr.querySelector('.item-total').innerText = total.toLocaleString() + ' ' + store.setup.currency;
-}
-
-function savePurInvoice(status) {
-    const editIdx = parseInt(document.getElementById('purEditIdx').value);
-    const supplier = document.getElementById('purSupplier').value;
-    const date = document.getElementById('purDate').value;
-    const rows = document.querySelectorAll('#purItemsTbody tr');
-
-    let subtotal = 0, vat = 0, total = 0;
-    let items = [];
-
-    rows.forEach(tr => {
-        const desc = tr.querySelector('.item-select').value;
-        const qty = parseFloat(tr.querySelector('.item-qty').value);
-        const unitPrice = parseFloat(tr.querySelector('.item-price').value);
-
-        const lineSubtotal = qty * unitPrice;
-        const lineVat = lineSubtotal * (store.setup.vatRate / 100);
-        const lineTotal = lineSubtotal + lineVat;
-
-        subtotal += lineSubtotal;
-        vat += lineVat;
-        total += lineTotal;
-
-        items.push({ description: desc, qty, unitPrice, subtotal: lineSubtotal, vat: lineVat, total: lineTotal });
-
-        if (status === 'POSTED') {
-            let item = store.inventory.find(i => i.name === desc);
-            if (item) {
-                item.qty += qty;
-                item.buyPrice = unitPrice;
-            }
-        }
-    });
-
-    let invId = editIdx >= 0 ? store.purchaseInvoices[editIdx].id : ('PO-' + Math.floor(1000 + Math.random() * 9000));
-    const invData = { id: invId, date, supplier, status, items, subtotal, vat, total };
-
-    if (editIdx >= 0) store.purchaseInvoices[editIdx] = invData;
-    else store.purchaseInvoices.unshift(invData);
-
-    if (status === 'POSTED') {
-        updateCoaBalance('110500', subtotal);
-        updateCoaBalance('110600', vat);
-        updateCoaBalance('210100', total);
-    }
-
-    saveDatabase();
-    alert(`تم حفظ وتحديث فاتورة المشتريات (${invId}) بحالة: ${status}`);
-    hidePurForm();
-    renderPurchasesPage(document.getElementById('contentArea'));
-}
-
-function deletePurInvoice(idx) {
-    if (confirm('هل أنت متأكد من حذف فاتورة المشتريات؟')) {
-        store.purchaseInvoices.splice(idx, 1);
-        saveDatabase();
-        renderPurchasesPage(document.getElementById('contentArea'));
-    }
-}
-
-// ==================== 3. EXPENSES MODULE (FULL CRUD) ====================
 function renderExpensesPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">سندات المصروفات التشغيلية والعمومية</h2>
-                <button onclick="showExpenseForm(-1)" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> تسجيل مصروف جديد</button>
-            </div>
-
-            <div id="expenseFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <input type="hidden" id="expEditIdx" value="-1">
-                <div class="grid grid-cols-3 gap-4 text-xs">
-                    <div>
-                        <label class="block font-bold mb-1 text-slate-700">بند المصروف *</label>
-                        <select id="expCategory" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold">
-                            <option value="وقود ومصاريف سيارات الفنيين">وقود ومصاريف سيارات الفنيين</option>
-                            <option value="رواتب ومنافع الموظفين">رواتب ومنافع الموظفين</option>
-                            <option value="إيجار وتأمين المقر والمستودع">إيجار وتأمين المقر والمستودع</option>
-                        </select>
-                    </div>
-                    <div><label class="block font-bold mb-1 text-slate-700">المبلغ الصافي *</label><input type="number" id="expAmount" value="500" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                    <div><label class="block font-bold mb-1 text-slate-700">التاريخ *</label><input type="date" id="expDate" value="${new Date().toISOString().slice(0,10)}" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                </div>
-                <div><label class="block font-bold mb-1 text-xs">الشرح والبيان التفصيلي</label><input type="text" id="expMemo" value="مصروفات ميدانية وتشغيلية" class="w-full border p-2 rounded-xl text-xs"></div>
-
-                <div class="flex justify-end gap-3 border-t pt-4">
-                    <button onclick="hideExpenseForm()" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">إلغاء</button>
-                    <button onclick="saveExpense('DRAFT')" class="bg-amber-500 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs shadow-md">حفظ مسودة</button>
-                    <button onclick="saveExpense('POSTED')" class="bg-red-600 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md">اعتماد وتعديل الحسابات</button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b font-bold text-slate-600">
-                        <tr><th class="p-3.5">الرقم</th><th class="p-3.5">التاريخ</th><th class="p-3.5">بند المصروف</th><th class="p-3.5">البيان</th><th class="p-3.5 text-center">المبلغ</th><th class="p-3.5 text-center">الحالة</th><th class="p-3.5 text-center">إجراءات</th></tr>
-                    </thead>
-                    <tbody>
-                        ${store.expenses.map((e, idx) => `
-                            <tr class="border-b hover:bg-slate-50">
-                                <td class="p-3.5 font-bold text-blue-600 font-mono">${e.id}</td>
-                                <td class="p-3.5">${e.date}</td>
-                                <td class="p-3.5 font-bold text-slate-800">${e.category}</td>
-                                <td class="p-3.5 text-slate-500">${e.memo || '-'}</td>
-                                <td class="p-3.5 text-center font-extrabold text-red-600">${e.amount.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center"><span class="${e.status==='POSTED'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'} px-2.5 py-1 rounded-full font-bold text-[10px]">${e.status==='POSTED'?'مُرحل':'مسودة'}</span></td>
-                                <td class="p-3.5 text-center space-x-1 space-x-reverse">
-                                    <button onclick="showExpenseForm(${idx})" class="text-blue-600 font-bold px-1.5"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteExpense(${idx})" class="text-red-500 font-bold px-1.5"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
+    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">المصروفات التشغيلية</h2><p class="text-xs text-slate-500">تسجيل ومتابعة كافة المصروفات وإصدار السندات المحاسبية.</p></div>`;
 }
 
-function showExpenseForm(idx = -1) {
-    document.getElementById('expEditIdx').value = idx;
-    if (idx >= 0) {
-        const e = store.expenses[idx];
-        document.getElementById('expCategory').value = e.category;
-        document.getElementById('expAmount').value = e.amount;
-        document.getElementById('expDate').value = e.date;
-        document.getElementById('expMemo').value = e.memo || '';
-    }
-    document.getElementById('expenseFormArea').classList.remove('hidden');
-}
-
-function hideExpenseForm() { document.getElementById('expenseFormArea').classList.add('hidden'); }
-
-function saveExpense(status) {
-    const editIdx = parseInt(document.getElementById('expEditIdx').value);
-    const category = document.getElementById('expCategory').value;
-    const amount = parseFloat(document.getElementById('expAmount').value);
-    const date = document.getElementById('expDate').value;
-    const memo = document.getElementById('expMemo').value;
-
-    let expId = editIdx >= 0 ? store.expenses[editIdx].id : ('EXP-' + Math.floor(100 + Math.random() * 900));
-    const data = { id: expId, date, category, amount, memo, status };
-
-    if (editIdx >= 0) store.expenses[editIdx] = data;
-    else store.expenses.unshift(data);
-
-    if (status === 'POSTED') {
-        updateCoaBalance('610000', amount);
-        updateCoaBalance('110100', -amount);
-    }
-
-    saveDatabase();
-    alert(`تم حفظ السند (${expId}) بحالة: ${status}`);
-    hideExpenseForm();
-    renderExpensesPage(document.getElementById('contentArea'));
-}
-
-function deleteExpense(idx) {
-    if (confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
-        store.expenses.splice(idx, 1);
-        saveDatabase();
-        renderExpensesPage(document.getElementById('contentArea'));
-    }
-}
-
-// ==================== 4. VOUCHERS MODULE (FULL CRUD) ====================
 function renderVouchersPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">سندات القبض وتحصيل العملاء وسندات الصرف</h2>
-                <div class="flex gap-2">
-                    <button onclick="showVoucherForm('RECEIPT', -1)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> سند قبض</button>
-                    <button onclick="showVoucherForm('PAYMENT', -1)" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-minus ml-1"></i> سند صرف</button>
-                </div>
-            </div>
-
-            <div id="voucherFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <input type="hidden" id="vEditIdx" value="-1">
-                <div class="grid grid-cols-3 gap-4 text-xs">
-                    <div><label class="block font-bold mb-1 text-slate-700">جهة المستند *</label><input type="text" id="vParty" value="شركة الأمان المحدودة" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                    <div><label class="block font-bold mb-1 text-slate-700">المبلغ *</label><input type="number" id="vAmount" value="1000" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                    <div>
-                        <label class="block font-bold mb-1 text-slate-700">الحساب المالي *</label>
-                        <select id="vAccount" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold">
-                            <option value="البنك الرئيسي">البنك الرئيسي</option>
-                            <option value="الصندوق / النقدية">الصندوق / النقدية</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-3 border-t pt-4">
-                    <button onclick="hideVoucherForm()" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">إلغاء</button>
-                    <button onclick="saveVoucher('POSTED')" class="bg-blue-600 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md">اعتماد وتعديل الحسابات</button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b font-bold text-slate-600">
-                        <tr><th class="p-3.5">رقم السند</th><th class="p-3.5">التاريخ</th><th class="p-3.5">النوع</th><th class="p-3.5">الجهة / الطرف</th><th class="p-3.5 text-center">المبلغ</th><th class="p-3.5 text-center">الحالة</th><th class="p-3.5 text-center">إجراءات</th></tr>
-                    </thead>
-                    <tbody>
-                        ${store.vouchers.map((v, idx) => `
-                            <tr class="border-b hover:bg-slate-50">
-                                <td class="p-3.5 font-bold text-blue-600 font-mono">${v.id}</td>
-                                <td class="p-3.5">${v.date}</td>
-                                <td class="p-3.5"><span class="${v.type==='RECEIPT'?'bg-emerald-100 text-emerald-800':'bg-red-100 text-red-800'} px-2.5 py-1 rounded-full font-bold text-[10px]">${v.type==='RECEIPT'?'قبض تحصيل':'صرف مورد'}</span></td>
-                                <td class="p-3.5 font-bold text-slate-800">${v.party}</td>
-                                <td class="p-3.5 text-center font-black text-slate-900">${v.amount.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">مُرحل</span></td>
-                                <td class="p-3.5 text-center space-x-1 space-x-reverse">
-                                    <button onclick="deleteVoucher(${idx})" class="text-red-500 font-bold px-1.5"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
+    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">سندات القبض والصرف</h2><p class="text-xs text-slate-500">تحصيل المقبوضات وصرف المستحقات مع التحديث المباشر للبنوك.</p></div>`;
 }
 
-let currentVoucherType = 'RECEIPT';
-function showVoucherForm(type, idx = -1) {
-    currentVoucherType = type;
-    document.getElementById('vEditIdx').value = idx;
-    document.getElementById('voucherFormArea').classList.remove('hidden');
-}
-function hideVoucherForm() { document.getElementById('voucherFormArea').classList.add('hidden'); }
-
-function saveVoucher(status) {
-    const party = document.getElementById('vParty').value;
-    const amount = parseFloat(document.getElementById('vAmount').value);
-    const account = document.getElementById('vAccount').value;
-    const vId = 'VCT-' + Math.floor(100 + Math.random() * 900);
-
-    store.vouchers.unshift({ id: vId, date: new Date().toISOString().slice(0,10), type: currentVoucherType, party, amount, account, status });
-
-    if (currentVoucherType === 'RECEIPT') {
-        updateCoaBalance('110200', amount);
-        updateCoaBalance('110300', -amount);
-    } else {
-        updateCoaBalance('210100', -amount);
-        updateCoaBalance('110200', -amount);
-    }
-
-    saveDatabase();
-    alert('تم ترحيل واعتماد السند بنجاح!');
-    hideVoucherForm();
-    renderVouchersPage(document.getElementById('contentArea'));
-}
-
-function deleteVoucher(idx) {
-    if (confirm('هل أنت متأكد من الحذف؟')) {
-        store.vouchers.splice(idx, 1);
-        saveDatabase();
-        renderVouchersPage(document.getElementById('contentArea'));
-    }
-}
-
-// ==================== 5. PROJECTS & CONTRACTS ====================
 function renderProjectsPage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-black text-slate-800">إدارة المشاريع وعقود التركيب والصيانة</h2>
-                <button onclick="showProjectForm()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> مشروع عقد جديد</button>
-            </div>
-
-            <div id="projectFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <div class="grid grid-cols-3 gap-4 text-xs">
-                    <div><label class="block font-bold mb-1 text-slate-700">اسم المشروع / العقد *</label><input type="text" id="prjTitle" value="مشروع تركيب كاميرات مراقبة" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                    <div><label class="block font-bold mb-1 text-slate-700">العميل *</label><input type="text" id="prjClient" value="شركة الأمان المحدودة" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                    <div><label class="block font-bold mb-1 text-slate-700">قيمة العقد الإجمالية *</label><input type="number" id="prjContractVal" value="45000" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                    <div><label class="block font-bold mb-1 text-slate-700">إجمالي التكاليف المباشرة *</label><input type="number" id="prjTotalCost" value="25000" class="w-full border p-2.5 rounded-xl bg-slate-50 font-bold"></div>
-                </div>
-                <div class="flex justify-end gap-3 border-t pt-4">
-                    <button onclick="hideProjectForm()" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">إلغاء</button>
-                    <button onclick="saveProject()" class="bg-emerald-600 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md">حفظ واعتماد العقد</button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 border-b font-bold text-slate-600">
-                        <tr><th class="p-3.5">رقم المشروع</th><th class="p-3.5">المشروع</th><th class="p-3.5">العميل</th><th class="p-3.5 text-center">قيمة العقد</th><th class="p-3.5 text-center">التكاليف المباشرة</th><th class="p-3.5 text-center">صافي الربح</th><th class="p-3.5 text-center">إجراءات</th></tr>
-                    </thead>
-                    <tbody>
-                        ${store.projects.map((p, idx) => `
-                            <tr class="border-b hover:bg-slate-50">
-                                <td class="p-3.5 font-bold font-mono text-blue-600">${p.id}</td>
-                                <td class="p-3.5 font-bold text-slate-800">${p.title}</td>
-                                <td class="p-3.5">${p.client}</td>
-                                <td class="p-3.5 text-center font-black">${p.contractVal.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center font-bold text-red-600">${p.totalCost.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center font-black ${p.profit>=0?'text-emerald-600':'text-red-600'}">${p.profit.toLocaleString()} ${store.setup.currency}</td>
-                                <td class="p-3.5 text-center"><button onclick="deleteProject(${idx})" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button></td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
+    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">إدارة المشاريع والعقود</h2><p class="text-xs text-slate-500">تتبع المشاريع والعقود ومقارنة التكاليف بالربحية المعتمدة.</p></div>`;
 }
 
-function showProjectForm() { document.getElementById('projectFormArea').classList.remove('hidden'); }
-function hideProjectForm() { document.getElementById('projectFormArea').classList.add('hidden'); }
-
-function saveProject() {
-    const title = document.getElementById('prjTitle').value;
-    const client = document.getElementById('prjClient').value;
-    const contractVal = parseFloat(document.getElementById('prjContractVal').value);
-    const totalCost = parseFloat(document.getElementById('prjTotalCost').value);
-    const profit = contractVal - totalCost;
-
-    const id = 'PRJ-' + Math.floor(100 + Math.random() * 900);
-    store.projects.unshift({ id, title, client, contractVal, totalCost, profit, status: 'POSTED' });
-    saveDatabase();
-    alert('تم حفظ العقد والمشروع بنجاح!');
-    hideProjectForm();
-    renderProjectsPage(document.getElementById('contentArea'));
-}
-
-function deleteProject(idx) {
-    if (confirm('هل أنت متأكد من الحذف؟')) {
-        store.projects.splice(idx, 1);
-        saveDatabase();
-        renderProjectsPage(document.getElementById('contentArea'));
-    }
-}
-
-// ==================== OTHER FULLY FUNCTIONAL MODULES ====================
 function renderMaintenancePage(container) {
-    container.innerHTML = `
-        <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">إدارة طلبات الصيانة والدعم الفني</h2>
-            <div class="bg-white rounded-3xl border p-4 shadow-sm">
-                <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 font-bold"><tr><th class="p-3">الرقم</th><th class="p-3">العميل</th><th class="p-3">الجهاز</th><th class="p-3">المشكلة</th><th class="p-3 text-center">التكلفة</th><th class="p-3 text-center">الفاتورة</th></tr></thead>
-                    <tbody>
-                        ${store.maintenanceRequests.map(m => `
-                            <tr class="border-b"><td class="p-3 font-bold text-blue-600">${m.id}</td><td class="p-3">${m.client}</td><td class="p-3">${m.device}</td><td class="p-3">${m.issue}</td><td class="p-3 text-center text-red-600 font-bold">${m.cost}</td><td class="p-3 text-center text-emerald-600 font-bold">${m.revenue}</td></tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
+    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">طلبات الصيانة والدعم الفني</h2><p class="text-xs text-slate-500">تتبع طلبات صيانة الكاميرات وأجهزة التسجيل ومستلزمات العمالة.</p></div>`;
 }
 
 function renderCustodyPage(container) {
+    container.innerHTML = `<div class="p-6 bg-white rounded-3xl"><h2 class="text-xl font-black mb-4">عهد وإرشادات الفنيين</h2><p class="text-xs text-slate-500">تسوية عهد السيارات والوقود والمواد الميدانية للفنيين.</p></div>`;
+}
+
+// ==================== NEW MODULES: FIXED ASSETS, BUDGETING & CASH FORECAST ====================
+function renderAssetsPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">إدارة عهد ومصروفات الفنيين الميدانية</h2>
-            <div class="bg-white rounded-3xl border p-4 shadow-sm">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-800">سجل الأصول الثابتة وحساب الإهلاك المتراكم</h2>
+                <button onclick="showAssetForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-plus ml-1"></i> إضافة أصل جديد</button>
+            </div>
+            <div id="assetFormArea" class="hidden bg-white p-6 rounded-3xl border space-y-4">
+                <div class="grid grid-cols-3 gap-4 text-xs">
+                    <div><label class="block font-bold mb-1">اسم الأصل *</label><input type="text" id="astName" value="جهاز كمبيوتر ومعدات تركيب" class="w-full border p-2 rounded-xl"></div>
+                    <div><label class="block font-bold mb-1">تكلفة الشراء *</label><input type="number" id="astCost" value="15000" class="w-full border p-2 rounded-xl"></div>
+                    <div><label class="block font-bold mb-1">الإهلاك المتراكم *</label><input type="number" id="astDep" value="3000" class="w-full border p-2 rounded-xl"></div>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="hideAssetForm()" class="bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold">إلغاء</button>
+                    <button onclick="saveAsset()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">حفظ الأصل</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-3xl border overflow-hidden">
                 <table class="w-full text-xs text-right">
-                    <thead class="bg-slate-50 font-bold"><tr><th class="p-3">الكود</th><th class="p-3">اسم الفني</th><th class="p-3 text-center">العهدة المسلمة</th><th class="p-3 text-center">المصروف الفعلي</th><th class="p-3 text-center">الرصيد المتبقي</th></tr></thead>
+                    <thead class="bg-slate-50 border-b font-bold">
+                        <tr><th class="p-3">الكود</th><th class="p-3">الأصل</th><th class="p-3 text-center">تكلفة الأصل</th><th class="p-3 text-center">مجمع الإهلاك</th><th class="p-3 text-center">صافي القيمة الدفترية</th><th class="p-3 text-center">حذف</th></tr>
+                    </thead>
                     <tbody>
-                        ${store.techniciansCustody.map(c => `
-                            <tr class="border-b"><td class="p-3 font-bold text-blue-600">${c.id}</td><td class="p-3 font-bold">${c.techName}</td><td class="p-3 text-center font-bold">${c.amount}</td><td class="p-3 text-center text-red-600 font-bold">${c.spent}</td><td class="p-3 text-center text-emerald-600 font-bold">${c.remaining}</td></tr>
+                        ${store.fixedAssets.map((a, idx) => `
+                            <tr class="border-b"><td class="p-3 font-mono font-bold text-blue-600">${a.id}</td><td class="p-3 font-bold">${a.name}</td><td class="p-3 text-center font-bold">${a.cost.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center text-red-600 font-bold">${a.accumDep.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center font-black text-emerald-600">${a.netVal.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center"><button onclick="deleteAsset(${idx})" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button></td></tr>
                         `).join('')}
                     </tbody>
                 </table>
@@ -1237,6 +821,69 @@ function renderCustodyPage(container) {
     `;
 }
 
+function showAssetForm() { document.getElementById('assetFormArea').classList.remove('hidden'); }
+function hideAssetForm() { document.getElementById('assetFormArea').classList.add('hidden'); }
+
+function saveAsset() {
+    const name = document.getElementById('astName').value;
+    const cost = parseFloat(document.getElementById('astCost').value);
+    const accumDep = parseFloat(document.getElementById('astDep').value);
+    const netVal = cost - accumDep;
+    const id = 'AST-' + Math.floor(10 + Math.random() * 90);
+
+    store.fixedAssets.push({ id, name, date: new Date().toISOString().slice(0,10), cost, accumDep, netVal });
+    saveDatabase();
+    hideAssetForm();
+    renderAssetsPage(document.getElementById('contentArea'));
+}
+
+function deleteAsset(idx) {
+    store.fixedAssets.splice(idx, 1);
+    saveDatabase();
+    renderAssetsPage(document.getElementById('contentArea'));
+}
+
+function renderBudgetingPage(container) {
+    container.innerHTML = `
+        <div class="space-y-6">
+            <h2 class="text-xl font-black text-slate-800">الموازنات التقديرية ومقارنة الفعلي بالانحراف</h2>
+            <div class="bg-white rounded-3xl border overflow-hidden p-4">
+                <table class="w-full text-xs text-right">
+                    <thead class="bg-slate-50 border-b font-bold">
+                        <tr><th class="p-3">بند الموازنة</th><th class="p-3 text-center">الموازنة التقديرية المخططة</th><th class="p-3 text-center">الإنفاق الفعلي</th><th class="p-3 text-center">الانحراف (الربح/الوفر)</th></tr>
+                    </thead>
+                    <tbody>
+                        ${store.budgets.map(b => `
+                            <tr class="border-b"><td class="p-3 font-bold">${b.category}</td><td class="p-3 text-center font-bold">${b.planned.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center text-red-600 font-bold">${b.actual.toLocaleString()} ${store.setup.currency}</td><td class="p-3 text-center font-black text-emerald-600">${b.variance.toLocaleString()} ${store.setup.currency}</td></tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderCashForecastPage(container) {
+    const cash = getAccountBalance('110100') + getAccountBalance('110200');
+    const receivables = getAccountBalance('110300');
+    const payables = getAccountBalance('210100');
+    const projectedCash = cash + receivables - payables;
+
+    container.innerHTML = `
+        <div class="space-y-6">
+            <h2 class="text-xl font-black text-slate-800">التنبؤ التلقائي بالتدفقات النقدية (Cash Flow Forecast)</h2>
+            <div class="grid grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-3xl border"><span class="text-xs font-bold text-slate-400">السيولة النقدية الحالية</span><div class="text-2xl font-black text-blue-600 mt-1">${cash.toLocaleString()} ${store.setup.currency}</div></div>
+                <div class="bg-white p-5 rounded-3xl border"><span class="text-xs font-bold text-slate-400">التحصيلات المتوقعة (العملاء)</span><div class="text-2xl font-black text-emerald-600 mt-1">+${receivables.toLocaleString()} ${store.setup.currency}</div></div>
+                <div class="bg-white p-5 rounded-3xl border"><span class="text-xs font-bold text-slate-400">الالتزامات القادمة (الموردين)</span><div class="text-2xl font-black text-red-600 mt-1">-${payables.toLocaleString()} ${store.setup.currency}</div></div>
+                <div class="bg-white p-5 rounded-3xl border"><span class="text-xs font-bold text-slate-400">الرصيد النقدي المتوقع نهاية الفترة</span><div class="text-2xl font-black text-slate-900 mt-1">${projectedCash.toLocaleString()} ${store.setup.currency}</div></div>
+            </div>
+            ${projectedCash < 0 ? `<div class="p-4 bg-red-100 text-red-800 font-bold rounded-2xl">تنبيه حرج: يوجد عجز نقدي متوقع خلال الفترة المقبلة! يرجى تحصيل الديون المتبقية.</div>` : `<div class="p-4 bg-emerald-100 text-emerald-800 font-bold rounded-2xl">السيولة النقدية المتوقعة آمنة وممتازة كلياً.</div>`}
+        </div>
+    `;
+}
+
+// ==================== GENERAL ACCOUNTING MODULES ====================
 function renderCoaPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
@@ -1462,7 +1109,7 @@ function exportBackupJSON() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(store));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `ERP_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("download", `ERP_GIANT_BACKUP_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();

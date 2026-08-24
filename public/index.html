@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة العملاق للأنظمة الأمنية - Fully Integrated Enterprise ERP</title>
+    <title>المنظومة العملاقة لإدارة الأنظمة الأمنية - Enterprise ERP v8.0</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS Excel Export Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- QR Code Generator -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
         * { font-family: 'Tajawal', sans-serif; }
         body { background: #f8fafc; color: #1e293b; }
         .sidebar-item.active { background: linear-gradient(135deg, #0f172a, #1e293b); color: #38bdf8; border-right: 4px solid #38bdf8; }
-        .fade-in { animation: fadeIn 0.2s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.25s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         @media print {
             body * { visibility: hidden; }
             #printableArea, #printableArea * { visibility: visible; }
@@ -28,15 +33,15 @@
 <body class="antialiased">
 
 <div id="app" class="min-h-screen flex flex-col">
-    <!-- Top Header Navigation -->
+    <!-- Top Header Navigation Bar -->
     <header class="bg-slate-900 text-white h-16 fixed top-0 left-0 right-0 z-50 px-6 flex items-center justify-between shadow-xl">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-lg shadow-md">
-                <i class="fas fa-video"></i>
+                <i class="fas fa-shield-halved"></i>
             </div>
             <div>
                 <h1 class="font-black text-sm leading-tight" id="headerOrgTitle">مؤسسة الحلول الأمنية المرئية</h1>
-                <p class="text-[10px] text-blue-300">نظام إدارة الأنظمة الأمنية المحاسبي المترابط (Giant ERP v7.0)</p>
+                <p class="text-[10px] text-blue-300">نظام إدارة الأنظمة الأمنية الشامل (Giant ERP v8.0 Master)</p>
             </div>
         </div>
 
@@ -45,12 +50,12 @@
                 <i class="fas fa-brain"></i> المساعد AI
             </button>
             <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-xl text-xs border border-slate-700">
-                <span class="text-slate-400 font-bold px-2 text-[11px]">الصلاحية:</span>
+                <span class="text-slate-400 font-bold px-2 text-[11px]">الصلاحية الوظيفية:</span>
                 <select id="userRoleSelect" onchange="switchRole(this.value)" class="bg-slate-900 text-amber-400 font-bold text-xs p-1 rounded-lg focus:outline-none">
                     <option value="CFO">المدير المالي (CFO)</option>
                     <option value="ACCOUNTANT_MGR">مدير الحسابات</option>
                     <option value="ACCOUNTANT">محاسب تنفيذي</option>
-                    <option value="AUDITOR">المراجع الداخلي</option>
+                    <option value="AUDITOR">المراجع الداخلي والخارجي</option>
                 </select>
             </div>
         </div>
@@ -63,7 +68,7 @@
                 <span id="roleLabel" class="text-xs font-black text-amber-400">الصلاحية: المدير المالي (CFO)</span>
             </div>
 
-            <div class="text-[10px] font-black text-slate-500 px-3 pb-2 border-b border-slate-800 mb-1">مراكز القيادة والتحكم</div>
+            <div class="text-[10px] font-black text-slate-500 px-3 pb-2 border-b border-slate-800 mb-1">لوحات التحكم والإدارة العليا</div>
             <button onclick="switchTab('cfo_dashboard')" id="nav-cfo_dashboard" class="sidebar-item active w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
                 <i class="fas fa-crown w-5 text-center"></i><span>مركز قيادة المدير المالي</span>
             </button>
@@ -71,7 +76,7 @@
                 <i class="fas fa-list-check w-5 text-center"></i><span>مركز تحكم مدير الحسابات</span>
             </button>
 
-            <div class="text-[10px] font-black text-slate-500 px-3 pt-3 pb-2 border-b border-slate-800 mb-1">العمليات والمستندات</div>
+            <div class="text-[10px] font-black text-slate-500 px-3 pt-3 pb-2 border-b border-slate-800 mb-1">العمليات والمستندات الميدانية</div>
             <button onclick="switchTab('sales')" id="nav-sales" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
                 <i class="fas fa-file-invoice-dollar w-5 text-center"></i><span>المبيعات والتركيبات</span>
             </button>
@@ -90,8 +95,11 @@
             <button onclick="switchTab('maintenance')" id="nav-maintenance" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
                 <i class="fas fa-screwdriver-wrench w-5 text-center"></i><span>طلبات الصيانة والدعم</span>
             </button>
+            <button onclick="switchTab('custody')" id="nav-custody" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
+                <i class="fas fa-user-gear w-5 text-center"></i><span>عهد الفنيين والعهد الميدانية</span>
+            </button>
 
-            <div class="text-[10px] font-black text-slate-500 px-3 pt-3 pb-2 border-b border-slate-800 mb-1">التخطيط والمحاسبة الذكية</div>
+            <div class="text-[10px] font-black text-slate-500 px-3 pt-3 pb-2 border-b border-slate-800 mb-1">التقارير الحسابية والقوائم المالية</div>
             <button onclick="switchTab('coa')" id="nav-coa" class="sidebar-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold">
                 <i class="fas fa-sitemap w-5 text-center"></i><span>شجرة الحسابات (COA)</span>
             </button>
@@ -106,14 +114,14 @@
             </button>
         </aside>
 
-        <!-- Main Workspace Area -->
+        <!-- Dynamic Main Workspace Area -->
         <main class="mr-64 flex-1 p-8 overflow-y-auto">
             <div id="contentArea" class="fade-in max-w-7xl mx-auto space-y-6"></div>
         </main>
     </div>
 </div>
 
-<!-- Modal: Printable Invoice -->
+<!-- Modal: Printable Document View -->
 <div id="printModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl w-full max-w-3xl shadow-2xl p-8 space-y-6 my-8" id="printableArea">
         <div id="printContent"></div>
@@ -124,7 +132,7 @@
     </div>
 </div>
 
-<!-- AI Chat Assistant Modal -->
+<!-- Modal: AI Assistant Chat -->
 <div id="aiModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col h-[550px] border border-slate-100">
         <div class="p-4 bg-slate-900 text-white flex justify-between items-center rounded-t-3xl">
@@ -133,7 +141,7 @@
         </div>
         <div id="aiChatBody" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs">
             <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-[85%] text-slate-800">
-                أهلاً بك! أنا المساعد المالي المباشر للنظام. يمكنك الاستعلام المباشر عن الأرباح والسيولة والعملاء.
+                أهلاً بك! أنا المساعد المالي والمدقق الحسابي الذكي. يمكنني تقديم تحليلات فورية لمبيعاتك، أرباحك، والسيولة النقدية بالنظام.
             </div>
         </div>
         <div class="p-3 bg-white border-t flex gap-2 rounded-b-3xl">
@@ -144,19 +152,23 @@
 </div>
 
 <script>
-const DB_KEY = 'GIANT_ERP_DATABASE_V7';
+// ==================== GLOBAL PERSISTENT DATABASE ====================
+const DB_KEY = 'GIANT_ERP_DATABASE_V8';
 
 const defaultDatabase = {
     setup: { orgName: 'مؤسسة الحلول الأمنية المرئية', vatNo: '300050000000003', currency: 'SAR', vatRate: 15, isConfigured: true },
     role: 'CFO',
     currentTab: 'cfo_dashboard',
 
+    // شجرة حسابات معتمدة وشاملة لنشاط الكاميرات والأنظمة الأمنية
     coa: [
         { code: '110100', name: 'الصندوق الرئيسي / النقدية', type: 'ASSET', balance: 50000 },
         { code: '110200', name: 'بنك الراجحي الرئيسي', type: 'ASSET', balance: 180000 },
         { code: '110300', name: 'العملاء والذمم المدينة', type: 'ASSET', balance: 45000 },
         { code: '110501', name: 'مخزون كاميرات المراقبة والأجهزة', type: 'ASSET', balance: 65000 },
         { code: '110600', name: 'ضريبة المدخلات (مستردة 15%)', type: 'ASSET', balance: 6000 },
+        { code: '120100', name: 'سيارات ومعدات التركيب الميداني', type: 'ASSET', balance: 120000 },
+        { code: '120900', name: 'مجمع إهلاك السيارات والمعدات', type: 'ASSET', balance: -20000 },
         { code: '210100', name: 'الموردون والذمم الدائنة', type: 'LIABILITY', balance: 25000 },
         { code: '210200', name: 'ضريبة المخرجات (مستحقة 15%)', type: 'LIABILITY', balance: 10500 },
         { code: '310000', name: 'رأس المال المعتمد', type: 'EQUITY', balance: 200000 },
@@ -199,8 +211,12 @@ const defaultDatabase = {
         { id: 'MNT-301', client: 'مؤسسة السلام الأمنية', device: 'NVR 16 Channel', issue: 'انقطاع البث الشبكي', technician: 'أحمد الفني', revenue: 600, status: 'POSTED' }
     ],
 
+    techniciansCustody: [
+        { id: 'CST-01', techName: 'أحمد الفني', amount: 2000, spent: 1250, remaining: 750, notes: 'عةدة وقود وسلالم', status: 'POSTED' }
+    ],
+
     journals: [
-        { id: 'JV-2026-001', date: '2026-08-20', desc: 'إثبات فاتورة مبيعات INV-9901 - شركة الأمان', amount: 4600, status: 'POSTED', debitAcc: 'العملاء والذمم المدينة', creditAcc: 'إيرادات مبيعات الكاميرات' }
+        { id: 'JV-2026-001', date: '2026-08-20', desc: 'إثبات فاتورة مبيعات INV-9901 - شركة الأمان', amount: 4600, status: 'POSTED' }
     ]
 };
 
@@ -263,6 +279,7 @@ function renderTab() {
         case 'vouchers': renderVouchersPage(area); break;
         case 'projects': renderProjectsPage(area); break;
         case 'maintenance': renderMaintenancePage(area); break;
+        case 'custody': renderCustodyPage(area); break;
         case 'coa': renderCoaPage(area); break;
         case 'journals': renderJournalsPage(area); break;
         case 'financial_statements': renderFinancialStatementsPage(area); break;
@@ -289,6 +306,7 @@ function renderCfoDashboard(container) {
                     <h2 class="text-xl font-black text-slate-800"><i class="fas fa-crown text-amber-500 ml-2"></i> مركز قيادة المدير المالي (CFO Dashboard)</h2>
                     <p class="text-xs text-slate-500 mt-1">الربط التلقائي المباشر لجميع العمليات المالية والحسابية</p>
                 </div>
+                <button onclick="exportTableToExcel('cfoSummaryTable', 'CFO_Financial_Summary')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-file-excel ml-1"></i> تصدير ملخص الميزانية Excel</button>
             </div>
 
             <div class="grid grid-cols-4 gap-4">
@@ -340,7 +358,10 @@ function renderSalesPage(container) {
         <div class="space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-black text-slate-800">فواتير المبيعات والتركيبات (ZATCA)</h2>
-                ${!isAuditor ? `<button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة جديدة</button>` : ''}
+                <div class="flex gap-2">
+                    <button onclick="exportTableToExcel('salesTable', 'Sales_Invoices')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> Excel</button>
+                    ${!isAuditor ? `<button onclick="showSalesForm(-1)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة جديدة</button>` : ''}
+                </div>
             </div>
 
             <div id="salesFormArea" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
@@ -374,7 +395,7 @@ function renderSalesPage(container) {
             </div>
 
             <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-xs text-right">
+                <table class="w-full text-xs text-right" id="salesTable">
                     <thead class="bg-slate-50 border-b font-bold text-slate-600">
                         <tr><th class="p-3.5">رقم الفاتورة</th><th class="p-3.5">التاريخ</th><th class="p-3.5">العميل</th><th class="p-3.5 text-center">قبل الضريبة</th><th class="p-3.5 text-center">الضريبة 15%</th><th class="p-3.5 text-center">الإجمالي</th><th class="p-3.5 text-center">الحالة</th><th class="p-3.5 text-center">إجراءات</th></tr>
                     </thead>
@@ -468,7 +489,7 @@ function saveSalesInvoice(status) {
         updateCoaBalance('110300', total);
         updateCoaBalance('410100', subtotal);
         updateCoaBalance('210200', vat);
-        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات فاتورة مبيعات ${invId}`, amount: total, status: 'POSTED', debitAcc: 'العملاء والذمم المدينة', creditAcc: 'إيرادات مبيعات الكاميرات' });
+        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات فاتورة مبيعات ${invId}`, amount: total, status: 'POSTED' });
     }
 
     saveDatabase();
@@ -491,7 +512,10 @@ function renderPurchasesPage(container) {
         <div class="space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-black text-slate-800">فواتير المشتريات والتوريد</h2>
-                <button onclick="showPurchasesForm(-1)" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة مشتريات جديدة</button>
+                <div class="flex gap-2">
+                    <button onclick="exportTableToExcel('purTable', 'Purchases_Report')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> Excel</button>
+                    <button onclick="showPurchasesForm(-1)" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> فاتورة جديدة</button>
+                </div>
             </div>
 
             <div id="purFormArea" class="hidden bg-white p-6 rounded-3xl border shadow-sm space-y-4">
@@ -507,7 +531,7 @@ function renderPurchasesPage(container) {
             </div>
 
             <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
-                <table class="w-full text-xs text-right">
+                <table class="w-full text-xs text-right" id="purTable">
                     <thead class="bg-slate-50 border-b font-bold">
                         <tr><th class="p-3.5">رقم الأمر</th><th class="p-3.5">التاريخ</th><th class="p-3.5">المورد</th><th class="p-3.5 text-center">الإجمالي</th><th class="p-3.5 text-center">إجراءات</th></tr>
                     </thead>
@@ -537,7 +561,7 @@ function savePurchaseInvoice() {
     updateCoaBalance('110501', subtotal);
     updateCoaBalance('110600', vat);
     updateCoaBalance('210100', total);
-    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات فاتورة مشتريات ${id}`, amount: total, status: 'POSTED', debitAcc: 'المخزون والضريبة', creditAcc: 'الموردون' });
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات فاتورة مشتريات ${id}`, amount: total, status: 'POSTED' });
 
     saveDatabase();
     hidePurchasesForm();
@@ -557,7 +581,10 @@ function renderExpensesPage(container) {
         <div class="space-y-6">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-black text-slate-800">المصروفات التشغيلية</h2>
-                <button onclick="showExpenseForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> إضافة مصروف جديد</button>
+                <div class="flex gap-2">
+                    <button onclick="exportTableToExcel('expTable', 'Expenses_Report')" class="bg-emerald-600 text-white font-bold px-3 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> Excel</button>
+                    <button onclick="showExpenseForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> إضافة مصروف</button>
+                </div>
             </div>
 
             <div id="expFormArea" class="hidden bg-white p-6 rounded-3xl border shadow-sm space-y-4">
@@ -573,7 +600,7 @@ function renderExpensesPage(container) {
             </div>
 
             <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
-                <table class="w-full text-xs text-right">
+                <table class="w-full text-xs text-right" id="expTable">
                     <thead class="bg-slate-50 border-b font-bold">
                         <tr><th class="p-3.5">الرقم</th><th class="p-3.5">التاريخ</th><th class="p-3.5">البند</th><th class="p-3.5">البيان</th><th class="p-3.5 text-center">المبلغ</th><th class="p-3.5 text-center">حذف</th></tr>
                     </thead>
@@ -599,7 +626,7 @@ function saveExpense() {
     store.expenses.unshift({ id, date, category, amount, memo, status: 'POSTED' });
     updateCoaBalance('610100', amount);
     updateCoaBalance('110100', -amount);
-    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `مصروف تشغيلي: ${memo}`, amount, status: 'POSTED', debitAcc: 'المصروفات التشغيلية', creditAcc: 'الصندوق' });
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `مصروف تشغيلي: ${memo}`, amount, status: 'POSTED' });
 
     saveDatabase();
     hideExpenseForm();
@@ -662,11 +689,11 @@ function saveVoucher() {
     if (type === 'RECEIPT') {
         updateCoaBalance('110200', amount);
         updateCoaBalance('110300', -amount);
-        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `سند قبض من: ${party}`, amount, status: 'POSTED', debitAcc: 'البنك الرئيسي', creditAcc: 'العملاء' });
+        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `سند قبض من: ${party}`, amount, status: 'POSTED' });
     } else {
         updateCoaBalance('210100', -amount);
         updateCoaBalance('110200', -amount);
-        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `سند صرف إلى: ${party}`, amount, status: 'POSTED', debitAcc: 'الموردون', creditAcc: 'البنك الرئيسي' });
+        store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `سند صرف إلى: ${party}`, amount, status: 'POSTED' });
     }
     saveDatabase();
     hideVoucherForm();
@@ -730,7 +757,7 @@ function saveProject() {
 
     store.projects.unshift({ id, title, client, contractVal, totalCost, profit, status: 'POSTED' });
     updateCoaBalance('410200', contractVal);
-    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات عقد مشروع: ${title}`, amount: contractVal, status: 'POSTED', debitAcc: 'العملاء', creditAcc: 'إيرادات العقود والمشاريع' });
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إثبات عقد مشروع: ${title}`, amount: contractVal, status: 'POSTED' });
 
     saveDatabase();
     hideProjectForm();
@@ -793,7 +820,7 @@ function saveMaintenance() {
 
     store.maintenanceRequests.unshift({ id, client, device, issue: 'صيانة ميدانية', technician, revenue, status: 'POSTED' });
     updateCoaBalance('410300', revenue);
-    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إيراد صيانة - العميل: ${client}`, amount: revenue, status: 'POSTED', debitAcc: 'الصندوق / النقدية', creditAcc: 'إيرادات عقود الصيانة' });
+    store.journals.unshift({ id: 'JV-' + Math.floor(10000 + Math.random() * 90000), date, desc: `إيراد صيانة - العميل: ${client}`, amount: revenue, status: 'POSTED' });
 
     saveDatabase();
     hideMaintenanceForm();
@@ -807,13 +834,74 @@ function deleteMaintenance(idx) {
     }
 }
 
+// ==================== 7. CUSTODY MODULE ====================
+function renderCustodyPage(container) {
+    container.innerHTML = `
+        <div class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-800">عهد الفنيين والعهد الميدانية</h2>
+                <button onclick="showCustodyForm()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md"><i class="fas fa-plus ml-1"></i> تسليم عهدة جديده</button>
+            </div>
+
+            <div id="cstFormArea" class="hidden bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                <div class="grid grid-cols-3 gap-4 text-xs">
+                    <div><label class="block font-bold mb-1">اسم الفني *</label><input type="text" id="cstTech" class="w-full border p-2.5 rounded-xl font-bold"></div>
+                    <div><label class="block font-bold mb-1">المبلغ المسلم *</label><input type="number" id="cstAmount" class="w-full border p-2.5 rounded-xl font-bold"></div>
+                    <div><label class="block font-bold mb-1">البيان / الملاحظات *</label><input type="text" id="cstNotes" class="w-full border p-2.5 rounded-xl font-bold"></div>
+                </div>
+                <div class="flex justify-end gap-3 border-t pt-4">
+                    <button onclick="hideCustodyForm()" class="bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold">إلغاء</button>
+                    <button onclick="saveCustody()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold">تسليم العهدة وترحيلها</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
+                <table class="w-full text-xs text-right">
+                    <thead class="bg-slate-50 border-b font-bold">
+                        <tr><th class="p-3.5">الرقم</th><th class="p-3.5">الفني</th><th class="p-3.5 text-center">المبلغ المسلم</th><th class="p-3.5 text-center">المصروف</th><th class="p-3.5 text-center">المتبقي</th><th class="p-3.5 text-center">حذف</th></tr>
+                    </thead>
+                    <tbody>
+                        ${store.techniciansCustody.map((c, idx) => `
+                            <tr class="border-b"><td class="p-3.5 font-bold font-mono text-blue-600">${c.id}</td><td class="p-3.5 font-bold">${c.techName}</td><td class="p-3.5 text-center font-bold">${c.amount.toLocaleString()} ${store.setup.currency}</td><td class="p-3.5 text-center font-bold text-red-600">${c.spent.toLocaleString()} ${store.setup.currency}</td><td class="p-3.5 text-center font-black text-emerald-600">${c.remaining.toLocaleString()} ${store.setup.currency}</td><td class="p-3.5 text-center"><button onclick="deleteCustody(${idx})" class="text-red-500 font-bold"><i class="fas fa-trash"></i></button></td></tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+function showCustodyForm() { document.getElementById('cstFormArea').classList.remove('hidden'); }
+function hideCustodyForm() { document.getElementById('cstFormArea').classList.add('hidden'); }
+function saveCustody() {
+    const techName = document.getElementById('cstTech').value;
+    const amount = parseFloat(document.getElementById('cstAmount').value) || 0;
+    const notes = document.getElementById('cstNotes').value;
+    const id = 'CST-' + Math.floor(10 + Math.random() * 90);
+
+    store.techniciansCustody.unshift({ id, techName, amount, spent: 0, remaining: amount, notes, status: 'POSTED' });
+    updateCoaBalance('110100', -amount);
+    saveDatabase();
+    hideCustodyForm();
+    renderCustodyPage(document.getElementById('contentArea'));
+}
+function deleteCustody(idx) {
+    if (confirm('هل أنت متأكد من الحذف؟')) {
+        store.techniciansCustody.splice(idx, 1);
+        saveDatabase();
+        renderCustodyPage(document.getElementById('contentArea'));
+    }
+}
+
 // ==================== COA, JOURNALS & FINANCIAL STATEMENTS ====================
 function renderCoaPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">شجرة الحسابات المحاسبية المعتمدة (COA)</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-800">شجرة الحسابات المحاسبية المعتمدة (COA)</h2>
+                <button onclick="exportTableToExcel('coaTable', 'Chart_of_Accounts')" class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> تصدير Excel</button>
+            </div>
             <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
-                <table class="w-full text-xs text-right">
+                <table class="w-full text-xs text-right" id="coaTable">
                     <thead class="bg-slate-50 border-b font-bold"><tr><th class="p-3">رمز الحساب</th><th class="p-3">اسم الحساب</th><th class="p-3">النوع الرئيسي</th><th class="p-3 text-center">الرصيد الحالي</th></tr></thead>
                     <tbody>
                         ${store.coa.map(acc => `
@@ -829,9 +917,12 @@ function renderCoaPage(container) {
 function renderJournalsPage(container) {
     container.innerHTML = `
         <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">دفتر اليومية العامة والقيود المحاسبية التلقائية</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-800">دفتر اليومية العامة والقيود المحاسبية التلقائية</h2>
+                <button onclick="exportTableToExcel('journalsTable', 'General_Journal')" class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs"><i class="fas fa-file-excel ml-1"></i> تصدير القيود Excel</button>
+            </div>
             <div class="bg-white rounded-3xl border overflow-hidden shadow-sm">
-                <table class="w-full text-xs text-right">
+                <table class="w-full text-xs text-right" id="journalsTable">
                     <thead class="bg-slate-50 border-b font-bold"><tr><th class="p-3">رقم القيد</th><th class="p-3">التاريخ</th><th class="p-3">البيان والشرح</th><th class="p-3 text-center">المبلغ</th><th class="p-3 text-center">الحالة</th></tr></thead>
                     <tbody>
                         ${store.journals.map(j => `
@@ -852,9 +943,9 @@ function renderFinancialStatementsPage(container) {
 
     container.innerHTML = `
         <div class="space-y-6">
-            <h2 class="text-xl font-black text-slate-800">القوائم المالية الختامية (قائمة الدخل)</h2>
+            <h2 class="text-xl font-black text-slate-800">القوائم المالية الختامية (قائمة الدخل والمركز المالي)</h2>
             <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-3 max-w-xl mx-auto text-xs">
-                <div class="flex justify-between border-b pb-2"><span>إجمالي الإيرادات:</span><strong class="text-slate-800">${sales.toLocaleString()} ${store.setup.currency}</strong></div>
+                <div class="flex justify-between border-b pb-2"><span>إجمالي الإيرادات المعتمدة:</span><strong class="text-slate-800">${sales.toLocaleString()} ${store.setup.currency}</strong></div>
                 <div class="flex justify-between border-b pb-2"><span>تكلفة المبيعات (COGS):</span><strong class="text-red-600">-${cogs.toLocaleString()} ${store.setup.currency}</strong></div>
                 <div class="flex justify-between border-b pb-2"><span>المصروفات التشغيلية:</span><strong class="text-red-600">-${expenses.toLocaleString()} ${store.setup.currency}</strong></div>
                 <div class="flex justify-between border-t-2 pt-3 text-sm font-black"><span>صافي الربح للفترة:</span><strong class="${netIncome>=0?'text-emerald-600':'text-red-600'}">${netIncome.toLocaleString()} ${store.setup.currency}</strong></div>
@@ -873,6 +964,14 @@ function renderBackupPage(container) {
             </div>
         </div>
     `;
+}
+
+// ==================== EXCEL EXPORTER ====================
+function exportTableToExcel(tableID, filename = '') {
+    let table = document.getElementById(tableID);
+    if (!table) return;
+    let wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+    XLSX.writeFile(wb, (filename || 'Report') + '.xlsx');
 }
 
 // ==================== PRINT & AI ASSISTANT ====================
@@ -917,7 +1016,7 @@ function sendAiQuery() {
     b.innerHTML += `<div class="flex justify-end"><div class="bg-blue-600 text-white p-2.5 rounded-2xl max-w-[85%] font-medium">${q}</div></div>`;
     document.getElementById('aiInput').value = '';
     setTimeout(() => {
-        let resp = `استناداً إلى البيانات المعتمدة بالنظام:\n- إجمالي الإيرادات: ${(getAccountBalance('410100')+getAccountBalance('410200')+getAccountBalance('410300')).toLocaleString()} ${store.setup.currency}.\n- السيولة المتوفرة بالبنك والصندوق: ${(getAccountBalance('110100')+getAccountBalance('110200')).toLocaleString()} ${store.setup.currency}.`;
+        let resp = `استناداً إلى الحسابات المعتمدة بالنظام:\n- إجمالي الإيرادات: ${(getAccountBalance('410100')+getAccountBalance('410200')+getAccountBalance('410300')).toLocaleString()} ${store.setup.currency}.\n- السيولة المتوفرة بالبنك والصندوق: ${(getAccountBalance('110100')+getAccountBalance('110200')).toLocaleString()} ${store.setup.currency}.`;
         b.innerHTML += `<div class="flex justify-start"><div class="bg-white p-3 rounded-2xl border text-slate-800 border-slate-200 shadow-sm max-w-[85%] whitespace-pre-line">${resp}</div></div>`;
         b.scrollTop = b.scrollHeight;
     }, 300);

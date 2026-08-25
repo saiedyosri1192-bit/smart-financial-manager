@@ -96,3 +96,114 @@ def init_db():
     )''')
     
     # جلب الحسابات الافتراضية المخصصة (كلمة المرور الافتراضية للجميع: 123456)
+    admin_pass = hashlib.sha256("123456".encode()).hexdigest()
+    cursor.execute("INSERT OR IGNORE INTO users VALUES (?, ?, ?)", ("admin_cfo", admin_pass, "المدير المالي والمراجع"))
+    cursor.execute("INSERT OR IGNORE INTO users VALUES (?, ?, ?)", ("accountant1", admin_pass, "مدخل بيانات ومحاسب"))
+    
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# دالة كتابة سجل تتبع العمليات الفوري (Audit Trail)
+def log_action(username, action_type, description):
+    conn = sqlite3.connect('accounting_system.db')
+    cursor = conn.cursor()
+    date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute("INSERT INTO system_logs VALUES (NULL, ?, ?, ?, ?)", (date_now, username, action_type, description))
+    conn.commit()
+    conn.close()
+
+def check_login(username, password):
+    conn = sqlite3.connect('accounting_system.db')
+    cursor = conn.cursor()
+    p_hash = hashlib.sha256(password.encode()).hexdigest()
+    cursor.execute("SELECT role FROM users WHERE username = ? AND password_hash = ?", (username, p_hash))
+    res = cursor.fetchone()
+    conn.close()
+    return res if res else None
+
+# --- إدارة جلسة تسجيل الدخول وحماية الخادم السحابي ---
+if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
+if 'user_role' not in st.session_state: st.session_state['user_role'] = None
+if 'username' not in st.session_state: st.session_state['username'] = None
+
+if not st.session_state['logged_in']:
+    st.title("🔒 تسجيل الدخول الآمن - منصة مؤسسة الكاميرات الرقمية")
+    with st.form("login_form"):
+        user_input = st.text_input("اسم المستخدم")
+        pass_input = st.text_input("كلمة المرور", type="password")
+        login_btn = st.form_submit_button("دخول آمن للنظام")
+        if login_btn:
+            role = check_login(user_input, pass_input)
+            if role:
+                st.session_state['logged_in'] = True
+                st.session_state['user_role'] = role
+                st.session_state['username'] = user_input
+                log_action(user_input, "تسجيل دخول", "ولج المستخدم لنظام الإدارة السحابي")
+                st.success(f"تم تسجيل الدخول بصلاحية: {role}")
+                st.rerun()
+            else: st.error("خطأ في بيانات الاعتماد المحمية.")
+    st.stop()
+
+# --- محرك المراجع المالي (AI OCR) لقراءة وتوجيه فواتير الكاميرات بالذكاء الاصطناعي (GPT-4o) ---
+def analyze_invoice_with_ai(uploaded_file, api_key):
+    if not api_key: return None
+    try:
+        client = OpenAI(api_key=api_key)
+        base64_image = base64.b64encode(uploaded_file.getvalue()).decode('utf-8')
+        prompt = """
+        أنت مدير حسابات ومراجع مالي محترف في مؤسسة لبيع وتمديد وصيانة كاميرات المراقبة والأنظمة الأمنية.
+        قم بتحليل الفاتورة المرفقة بدقة مهارية متناهية واستخرج البيانات باللغة العربية كـ JSON نظيف بدون هوامش أو نصوص:
+        {
+            "invoice_type": "sales" (إذا كانت بيع كاميرات أو تمديد شبكة أو عقد صيانة لعميل) أو "purchase" (شراء كاميرات ومستلزمات من مورد) أو "expense" (إيجار، وقود، مصاريف فنيين)،
+            "party_name": "اسم العميل أو المورد أو الفني"،
+            "amount": "المبلغ الإجمالي الخاضع للضريبة كقيمة رقمية فقط",
+            "tax_amount": "قيمة ضريبة القيمة المضافة 15% كقيمة رقمية فقط",
+            "date": "التاريخ بصيغة YYYY-MM-DD",
+            "payment_status": "Paid" (كاش/شبكة) أو "Pending" (آجل/ذمم)"،
+            "due_date": "تاريخ الاستحقاق المتوقع YYYY-MM-DD"،
+            "technician_name": "اسم فني التركيب المذكور بالفاتورة إن وجد، وإلا اجعله 'غير محدد'"
+            "commission_rate": "إذا كانت فاتورة مبيعات/تركيبات، اقترح نسبة عمولة للفني كقيمة عشرية بناء على حجم التمديد مثلاً 0.05 لـ 5%، وإلا اجعلها 0.0",
+            "items": [
+                {"product_name": "اسم الكاميرا أو الملحق وموديلها الدقيق مثل Hikvision 8MP IP Camera", "quantity": "الكمية الرقمية الكلية", "price": "السعر الفردي للوحدة قبل الضريبة"}
+            ]
+        }
+        توجيه شجرة الحسابات: قم بفرز وتوجيه الحسابات بدقة وفقاً للأصول والالتزامات والإيرادات المخصصة لقطاع كاميرات المراقبة والأجهزة الأمنية.
+        """
+        response = client.chat.completions.create(
+            model="gpt-4o", messages=[{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}],
+            response_format={"type": "json_object"}
+        )
+        return json.loads(response.choices.message.content)
+    except Exception as e:
+        st.error(f"فشل محرك القراءة الآلي للفاتورة: {e}"); return None
+
+# --- ترحيل القيود وتعديل جرد المخازن وحساب عمولات الفنيين تلقائياً تبعاً لشجرة الحسابات ---
+def post_invoice_and_update_all(data):
+    conn = sqlite3.connect('accounting_system.db')
+    cursor = conn.cursor()
+    
+    inv_type, party, amount, tax, date = data['invoice_type'], data['party_name'], float(data['amount']), float(data['tax_amount']), data['date']
+    status, due_date, items = data.get('payment_status', 'Paid'), data.get('due_date', date), data.get('items', [])
+    tech_name = data.get('technician_name', 'غير محدد')
+    comm_rate = float(data.get('commission_rate', 0.0))
+    comm_amount = amount * comm_rate
+    
+    # تطبيق تفريعات شجرة الحسابات التخصصية للأنظمة الأمنية
+    if inv_type == 'sales':
+        debit_acc = '111. النقدية وحسابات البنوك' if status == 'Paid' else '112. ذمم مدينة (حسابات العملاء الآجلة)'
+        # توجيه الإيرادات تبعاً لطبيعة الفاتورة
+        credit_acc = '41. إيرادات بيع كاميرات وأجهزة أمنية'
+        if 'صيانة' in f"{items}": credit_acc = '43. إيرادات عقود الصيانة والدعم الفني'
+        elif 'تركيب' in f"{items}" or 'تمديد' in f"{items}": credit_acc = '42. إيرادات عقود التركيب والتمديدات للشبكات'
+            
+        cursor.execute("INSERT INTO journal_entries VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?)", 
+                       (date, f"إيراد مبيعات وخدمات لـ {party}", debit_acc, credit_acc, amount, tax, party, status, due_date, tech_name, comm_amount))
+        
+        # خصم الكاميرات والأجهزة المباعة من جرد المستودع تلقائياً
+        for item in items:
+            cursor.execute("UPDATE inventory SET quantity = quantity - ? WHERE product_name = ?", (int(item['quantity']), item['product_name']))
+        
+        # ربط وتحديث عمولة الفني المسؤول عن مشروع التركيب
+        if tech_name != 'غير محدد' and comm_amount > 0:

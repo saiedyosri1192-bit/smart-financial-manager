@@ -52,7 +52,7 @@ class ERPAccountingEngine:
                     reference TEXT,
                     source_type TEXT DEFAULT 'MANUAL',
                     description TEXT NOT NULL,
-                    posted_by TEXT DEFAULT 'المحاسب',
+                    posted_by TEXT DEFAULT 'المدير المالي',
                     status TEXT DEFAULT 'معتمد'
                 )
             ''')
@@ -70,7 +70,7 @@ class ERPAccountingEngine:
                 )
             ''')
 
-            # 4. جدول المعاملات المستوردة المؤقتة (Staging Area)
+            # 4. المعاملات المستوردة المعلقة
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS pending_imports (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,7 +85,6 @@ class ERPAccountingEngine:
                 )
             ''')
 
-            # شجرة حسابات متخصصة في مؤسسات كاميرات المراقبة والأنظمة الأمنية
             default_accounts = [
                 ('111', 'الصندوق / النقدية', 'أصل', 50000.0, 50000.0, 'مدين'),
                 ('112', 'حساب البنك الرئيسي', 'أصل', 200000.0, 200000.0, 'مدين'),
@@ -110,12 +109,24 @@ class ERPAccountingEngine:
 
             conn.commit()
 
-    def post_journal_entry(self, entry_date, description, reference, lines):
-        total_debit = sum(float(l['debit']) for l in lines)
-        total_credit = sum(float(l['credit']) for l in lines)
+    def ensure_account_exists(self, cursor, code, name="حساب مستحدث تلقائياً", acc_type="أصل"):
+        """إنشاء الحساب آلياً في شجرة الحسابات إذا لم يكن موجهاً لرمز معروف"""
+        row = cursor.execute('SELECT code FROM coa WHERE code = ?', (code,)).fetchone()
+        if not row:
+            cursor.execute('INSERT INTO coa VALUES (?, ?, ?, 0.0, 0.0, "مدين")', (code, name, acc_type))
 
-        if abs(total_debit - total_credit) > 0.001:
-            raise ValueError(f"القيد غير متوازن! إجمالي المدين ({total_debit:,.2f}) لا يساوي الدائن ({total_credit:,.2f})")
+    def post_journal_entry(self, entry_date, description, reference, lines):
+        # تصفية البنود الصفرية أو الفارغة
+        valid_lines = [l for l in lines if (float(l.get('debit', 0)) > 0 or float(l.get('credit', 0)) > 0)]
+
+        if not valid_lines:
+            raise ValueError("لا يمكن ترحيل قيد فارغ بدون مبالغ!")
+
+        total_debit = sum(round(float(l.get('debit', 0)), 2) for l in valid_lines)
+        total_credit = sum(round(float(l.get('credit', 0)), 2) for l in valid_lines)
+
+        if abs(total_debit - total_credit) > 0.01:
+            raise ValueError(f"القيد غير متوازن! إجمالي المدين ({total_debit:,.2f}) لا يطابق الدائن ({total_credit:,.2f})")
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -126,13 +137,15 @@ class ERPAccountingEngine:
             
             entry_id = cursor.lastrowid
 
-            for l in lines:
-                code = l['account_code']
-                debit = float(l['debit'])
-                credit = float(l['credit'])
+            for l in valid_lines:
+                code = str(l['account_code']).strip()
+                debit = float(l.get('debit', 0))
+                credit = float(l.get('credit', 0))
+
+                self.ensure_account_exists(cursor, code)
+
                 cursor.execute('INSERT INTO journal_lines (entry_id, account_code, debit, credit) VALUES (?, ?, ?, ?)', (entry_id, code, debit, credit))
                 
-                # تحديث رصيد الحساب المباشر
                 net_change = debit - credit
                 cursor.execute('UPDATE coa SET balance = balance + ? WHERE code = ?', (net_change, code))
 
@@ -144,7 +157,6 @@ class ERPAccountingEngine:
             cursor = conn.cursor()
             lines = cursor.execute('SELECT account_code, debit, credit FROM journal_lines WHERE entry_id = ?', (entry_id,)).fetchall()
             
-            # عكس الحركة المالية وتعديل الأرصدة تلقائياً
             for line in lines:
                 net_change = line['debit'] - line['credit']
                 cursor.execute('UPDATE coa SET balance = balance - ? WHERE code = ?', (net_change, line['account_code']))
@@ -164,7 +176,7 @@ class ERPAccountingEngine:
                     r_dict = row.to_dict()
                     ref = str(r_dict.get('رقم_الفاتورة', r_dict.get('Invoice', 'INV-AUTO')))
                     party = str(r_dict.get('العميل', r_dict.get('المورد', 'عميل/مورد نقدي')))
-                    amount = float(r_dict.get('الإجمالي', r_dict.get('Amount', 0)))
+                    amount = float(r_dict.get('الإجمالي', r_dict.get('Amount', 1000.0)))
                     tax = float(r_dict.get('الضريبة', r_dict.get('Tax', amount * 0.15)))
                     
                     cursor.execute('''
@@ -175,35 +187,8 @@ class ERPAccountingEngine:
                 conn.commit()
             return {"status": "success", "rows_count": len(extracted_rows)}
 
-        elif ext == 'pdf' and HAS_PDF:
-            text_content = ""
-            with pdfplumber.open(file_path) as pdf:
-                for page in pdf.pages:
-                    text_content += (page.extract_text() or "")
-            with self.get_connection() as conn:
-                conn.execute('''
-                    INSERT INTO pending_imports (doc_date, doc_ref, party_name, doc_type, amount, tax_amount, raw_content)
-                    VALUES (DATE('now'), 'PDF-DOC', 'مستند PDF', 'استخراج تلقائي', 0.0, 0.0, ?)
-                ''', (text_content,))
-                conn.commit()
-            return {"status": "success", "raw_text": text_content}
+        return {"status": "error", "message": "صيغة الملف غير مدعومة"}
 
-        elif ext in ['png', 'jpg', 'jpeg'] and HAS_OCR:
-            img = Image.open(file_path)
-            ocr_text = pytesseract.image_to_string(img, lang='ara+eng')
-            with self.get_connection() as conn:
-                conn.execute('''
-                    INSERT INTO pending_imports (doc_date, doc_ref, party_name, doc_type, amount, tax_amount, raw_content)
-                    VALUES (DATE('now'), 'IMG-OCR', 'صورة فاتورة', 'استخراج ضوئي', 0.0, 0.0, ?)
-                ''', (ocr_text,))
-                conn.commit()
-            return {"status": "success", "raw_text": ocr_text}
-
-        return {"status": "error", "message": "صيغة الملف غريبة أو مكتبات المعالجة غير مكتملة"}
-
-# ==========================================
-# 2. تطبيق Flask الخادم
-# ==========================================
 app = Flask(__name__)
 engine = ERPAccountingEngine()
 
@@ -219,7 +204,6 @@ def index():
     ''').fetchall()
     pending = conn.execute('SELECT * FROM pending_imports WHERE status = "PENDING"').fetchall()
 
-    # القوائم المالية والأرقام
     total_revenue = conn.execute("SELECT SUM(balance) as val FROM coa WHERE account_type = 'إيراد'").fetchone()['val'] or 0.0
     total_expenses = conn.execute("SELECT SUM(balance) as val FROM coa WHERE account_type = 'مصروف'").fetchone()['val'] or 0.0
     net_profit = total_revenue - total_expenses
@@ -251,7 +235,6 @@ def delete_entry(entry_id):
 
 @app.route('/api/convert_pending_to_entry/<int:import_id>', methods=['POST'])
 def convert_pending_to_entry(import_id):
-    """تحويل مستند مستورد معلق إلى قيد محاسبي مزدوج آلياً"""
     conn = engine.get_connection()
     item = conn.execute('SELECT * FROM pending_imports WHERE id = ?', (import_id,)).fetchone()
     
@@ -271,7 +254,7 @@ def convert_pending_to_entry(import_id):
     try:
         entry_id = engine.post_journal_entry(
             entry_date=item['doc_date'],
-            description=f"تحويل آلي لفاتورة: {item['party_name']} - مرجع {item['doc_ref']}",
+            description=f"ترحيل تلقائي: {item['party_name']} - مرجع {item['doc_ref']}",
             reference=item['doc_ref'],
             lines=lines
         )

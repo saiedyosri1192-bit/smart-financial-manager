@@ -4,3 +4,179 @@
 ├── financial_manager.db       (قاعدة البيانات)
 └── templates/
     └── dashboard.html         (الواجهة واللوحات التحليلية)
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>منظومة التحليل المالي والرقابة المحاسبية - Enterprise ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+        * { font-family: 'Tajawal', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 p-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <div class="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-xl">
+            <div>
+                <h1 class="text-xl font-black flex items-center gap-2">
+                    <i class="fas fa-brain text-blue-500"></i> منظومة التحليل المالي والإداري الذكي
+                </h1>
+                <p class="text-xs text-blue-300 mt-1">مركز تحليلات المدير المالي ومدير الحسابات والتدقيق الآلي</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="runAnalysis()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow">
+                    <i class="fas fa-chart-line ml-1"></i> تشغيل التحليل المالي
+                </button>
+                <a href="/api/export_excel" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow">
+                    <i class="fas fa-file-excel ml-1"></i> تصدير التقرير
+                </a>
+            </div>
+        </div>
+
+        <!-- Universal Dropzone (Excel, PDF, Images) -->
+        <div class="bg-white p-6 rounded-3xl border-2 border-dashed border-blue-300 text-center shadow-sm space-y-2">
+            <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls, .pdf, image/*" onchange="uploadFile()">
+            <button onclick="document.getElementById('fileInput').click()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6 py-3 rounded-xl shadow">
+                <i class="fas fa-cloud-arrow-up ml-2"></i> سحب وإسقاط فواتير وتقارير (Excel / PDF / صور OCR)
+            </button>
+            <p id="importStatus" class="text-xs text-slate-500 font-bold">يقوم المحرك بقراءة وتصنيف فواتير المبيعات، المشتريات، والمصروفات آلياً</p>
+        </div>
+
+        <!-- Analytical Dashboards Section -->
+        <div class="grid grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                <span class="text-xs font-bold text-slate-400">إجمالي الإيرادات</span>
+                <div id="statRevenue" class="text-xl font-black text-slate-800 mt-1">0.00 SAR</div>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                <span class="text-xs font-bold text-slate-400">هامش صافي الربح</span>
+                <div id="statProfitMargin" class="text-xl font-black text-emerald-600 mt-1">0%</div>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                <span class="text-xs font-bold text-slate-400">نسبة السيولة السريعة</span>
+                <div id="statQuickRatio" class="text-xl font-black text-blue-600 mt-1">0.0</div>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border shadow-sm">
+                <span class="text-xs font-bold text-slate-400">معدل تدوير المخزون</span>
+                <div id="statTurnover" class="text-xl font-black text-amber-600 mt-1">0.0 مرة</div>
+            </div>
+        </div>
+
+        <!-- CFO & Accounting Manager Insights -->
+        <div class="grid grid-cols-2 gap-6">
+            <!-- CFO Recommendations -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-4">
+                <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fas fa-user-tie text-amber-500"></i> تقرير التوجيه المالي (CFO Report)
+                </h3>
+                <div id="cfoNotes" class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs space-y-2 text-amber-900 font-medium">
+                    انقر على "تشغيل التحليل المالي" لتوليد التوصيات والتحليلات.
+                </div>
+            </div>
+
+            <!-- Accounting Manager Audit -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-4">
+                <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fas fa-clipboard-check text-blue-600"></i> تقرير مدير الحسابات والرقابة
+                </h3>
+                <div id="accAudit" class="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-xs space-y-2 text-blue-900 font-medium">
+                    يتم مطابقة التوازن المحاسبي وفحص أخطاء الترحيل تلقائياً.
+                </div>
+            </div>
+        </div>
+
+        <!-- COA & Journal Tables -->
+        <div class="grid grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
+                <h3 class="font-black text-slate-800 text-sm">شجرة الحسابات (COA)</h3>
+                <table class="w-full text-xs text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b font-bold text-slate-600">
+                            <th class="p-2.5">الرمز</th><th class="p-2.5">الحساب</th><th class="p-2.5 text-center">الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for acc in coa %}
+                        <tr class="border-b">
+                            <td class="p-2.5 font-mono font-bold text-blue-600">{{ acc['code'] }}</td>
+                            <td class="p-2.5 font-bold">{{ acc['name'] }}</td>
+                            <td class="p-2.5 text-center font-black">{{ "{:,.2f}".format(acc['balance']) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
+                <h3 class="font-black text-slate-800 text-sm">قيود اليومية العامة</h3>
+                <table class="w-full text-xs text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b font-bold text-slate-600">
+                            <th class="p-2.5">القيد</th><th class="p-2.5">التاريخ</th><th class="p-2.5">البيان</th><th class="p-2.5 text-center">المبلغ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for j in journals %}
+                        <tr class="border-b">
+                            <td class="p-2.5 font-mono font-bold text-indigo-600">JV-{{ j['id'] }}</td>
+                            <td class="p-2.5 text-[10px]">{{ j['entry_date'] }}</td>
+                            <td class="p-2.5 font-bold">{{ j['description'] }}</td>
+                            <td class="p-2.5 text-center font-black text-emerald-600">{{ "{:,.2f}".format(j['total_amount']) if j['total_amount'] else '0.00' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function runAnalysis() {
+            fetch('/api/analyze')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('statRevenue').innerText = data.metrics.revenue.toLocaleString() + ' SAR';
+                document.getElementById('statProfitMargin').innerText = data.metrics.profit_margin.toFixed(1) + '%';
+                document.getElementById('statQuickRatio').innerText = data.metrics.quick_ratio.toFixed(2);
+                document.getElementById('statTurnover').innerText = data.metrics.inventory_turnover.toFixed(2) + ' مرة';
+
+                // CFO Insights
+                let cfoHtml = '<ul class="list-disc pr-4 space-y-1">';
+                data.cfo_insights.forEach(msg => { cfoHtml += `<li>${msg}</li>`; });
+                cfoHtml += '</ul>';
+                document.getElementById('cfoNotes').innerHTML = cfoHtml;
+
+                // Accountant Audit Insights
+                let accHtml = '<ul class="list-disc pr-4 space-y-1">';
+                data.accounting_audit.forEach(msg => { accHtml += `<li>${msg}</li>`; });
+                accHtml += '</ul>';
+                document.getElementById('accAudit').innerHTML = accHtml;
+            });
+        }
+
+        function uploadFile() {
+            const input = document.getElementById('fileInput');
+            if (!input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            document.getElementById('importStatus').innerText = "جاري رفع وقراءة ومعالجة البيانات...";
+            fetch('/api/import_file', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    document.getElementById('importStatus').innerText = "تم استيراد وقراءة البيانات بنجاح!";
+                    runAnalysis();
+                } else {
+                    document.getElementById('importStatus').innerText = "خطأ: " + data.message;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

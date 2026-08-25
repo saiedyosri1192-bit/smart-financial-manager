@@ -1,4 +1,285 @@
-function submitManualEntry() {
+import os
+import sqlite3
+from flask import Flask, render_template, request, jsonify
+import pandas as pd
+
+try:
+    import pdfplumber
+    HAS_PDF = True
+except ImportError:
+    HAS_PDF = False
+
+try:
+    from PIL import Image
+    import pytesseract
+    HAS_OCR = True
+except ImportError:
+    HAS_OCR = False
+
+DB_NAME = 'financial_manager.db'
+
+class ERPAccountingEngine:
+    def __init__(self, db_name=DB_NAME):
+        self.db_name = db_name
+        self.init_db()
+
+    def get_connection(self):
+        conn = sqlite3.connect(self.db_name)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def init_db(self):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 1. شجرة الحسابات
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS coa (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    account_type TEXT NOT NULL,
+                    opening_balance REAL DEFAULT 0.0,
+                    balance REAL DEFAULT 0.0,
+                    badge_type TEXT DEFAULT 'مدين'
+                )
+            ''')
+
+            # 2. قيود اليومية العامة
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS journal_entries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_date TEXT NOT NULL,
+                    reference TEXT,
+                    source_type TEXT DEFAULT 'MANUAL',
+                    description TEXT NOT NULL,
+                    posted_by TEXT DEFAULT 'المدير المالي',
+                    status TEXT DEFAULT 'معتمد'
+                )
+            ''')
+
+            # 3. تفاصيل القيود
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS journal_lines (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_id INTEGER NOT NULL,
+                    account_code TEXT NOT NULL,
+                    debit REAL DEFAULT 0.0,
+                    credit REAL DEFAULT 0.0,
+                    FOREIGN KEY(entry_id) REFERENCES journal_entries(id) ON DELETE CASCADE,
+                    FOREIGN KEY(account_code) REFERENCES coa(code)
+                )
+            ''')
+
+            # 4. المعاملات المستوردة المعلقة
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS pending_imports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    doc_date TEXT,
+                    doc_ref TEXT,
+                    party_name TEXT,
+                    doc_type TEXT,
+                    amount REAL,
+                    tax_amount REAL,
+                    raw_content TEXT,
+                    status TEXT DEFAULT 'PENDING'
+                )
+            ''')
+
+            default_accounts = [
+                ('111', 'الصندوق / النقدية', 'أصل', 50000.0, 50000.0, 'مدين'),
+                ('112', 'حساب البنك الرئيسي', 'أصل', 200000.0, 200000.0, 'مدين'),
+                ('113', 'ذمم العملاء', 'أصل', 180000.0, 180000.0, 'مدين'),
+                ('1141', 'مخزون كاميرات المراقبة', 'أصل', 120000.0, 120000.0, 'مدين'),
+                ('1142', 'مخزون أجهزة التسجيل (NVR/DVR)', 'أصل', 85000.0, 85000.0, 'مدين'),
+                ('1143', 'مخزون الهارددكات والملحقات', 'أصل', 45000.0, 45000.0, 'مدين'),
+                ('115', 'ضريبة المدخلات المستردة 15%', 'أصل', 0.0, 0.0, 'مدين'),
+                ('21', 'ذمم الموردين', 'التزام', 120000.0, 120000.0, 'دائن'),
+                ('24', 'ضريبة المخرجات المستحقة 15%', 'التزام', 0.0, 0.0, 'دائن'),
+                ('31', 'رأس المال المعتمد', 'حقوق', 800000.0, 800000.0, 'دائن'),
+                ('41', 'إيرادات مبيعات الكاميرات', 'إيراد', 0.0, 0.0, 'دائن'),
+                ('42', 'إيرادات مشاريع التركيب والشبكات', 'إيراد', 0.0, 0.0, 'دائن'),
+                ('43', 'إيرادات الصيانة والزيارات', 'إيراد', 0.0, 0.0, 'دائن'),
+                ('51', 'تكلفة الكاميرات المباعة', 'مصروف', 0.0, 0.0, 'مدين'),
+                ('52', 'تكلفة مواد ومستلزمات التركيب', 'مصروف', 0.0, 0.0, 'مدين'),
+                ('61', 'رواتب ومنافع الموظفين والفنيين', 'مصروف', 0.0, 0.0, 'مدين'),
+                ('62', 'مصاريف وقود وسيول سيارات الفنيين', 'مصروف', 0.0, 0.0, 'مدين')
+            ]
+            for code, name, acc_type, open_bal, bal, badge in default_accounts:
+                cursor.execute('INSERT OR IGNORE INTO coa VALUES (?, ?, ?, ?, ?, ?)', (code, name, acc_type, open_bal, bal, badge))
+
+            conn.commit()
+
+    def ensure_account_exists(self, cursor, code, name="حساب مستحدث تلقائياً", acc_type="أصل"):
+        """إنشاء الحساب آلياً في شجرة الحسابات إذا لم يكن موجهاً لرمز معروف"""
+        row = cursor.execute('SELECT code FROM coa WHERE code = ?', (code,)).fetchone()
+        if not row:
+            cursor.execute('INSERT INTO coa VALUES (?, ?, ?, 0.0, 0.0, "مدين")', (code, name, acc_type))
+
+    def post_journal_entry(self, entry_date, description, reference, lines):
+        # تصفية البنود الصفرية أو الفارغة
+        valid_lines = [l for l in lines if (float(l.get('debit', 0)) > 0 or float(l.get('credit', 0)) > 0)]
+
+        if not valid_lines:
+            raise ValueError("لا يمكن ترحيل قيد فارغ بدون مبالغ!")
+
+        total_debit = sum(round(float(l.get('debit', 0)), 2) for l in valid_lines)
+        total_credit = sum(round(float(l.get('credit', 0)), 2) for l in valid_lines)
+
+        if abs(total_debit - total_credit) > 0.01:
+            raise ValueError(f"القيد غير متوازن! إجمالي المدين ({total_debit:,.2f}) لا يطابق الدائن ({total_credit:,.2f})")
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO journal_entries (entry_date, description, reference, posted_by, status)
+                VALUES (?, ?, ?, 'المدير المالي', 'معتمد')
+            ''', (entry_date, description, reference))
+            
+            entry_id = cursor.lastrowid
+
+            for l in valid_lines:
+                code = str(l['account_code']).strip()
+                debit = float(l.get('debit', 0))
+                credit = float(l.get('credit', 0))
+
+                self.ensure_account_exists(cursor, code)
+
+                cursor.execute('INSERT INTO journal_lines (entry_id, account_code, debit, credit) VALUES (?, ?, ?, ?)', (entry_id, code, debit, credit))
+                
+                net_change = debit - credit
+                cursor.execute('UPDATE coa SET balance = balance + ? WHERE code = ?', (net_change, code))
+
+            conn.commit()
+            return entry_id
+
+    def delete_journal_entry(self, entry_id):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            lines = cursor.execute('SELECT account_code, debit, credit FROM journal_lines WHERE entry_id = ?', (entry_id,)).fetchall()
+            
+            for line in lines:
+                net_change = line['debit'] - line['credit']
+                cursor.execute('UPDATE coa SET balance = balance - ? WHERE code = ?', (net_change, line['account_code']))
+
+            cursor.execute('DELETE FROM journal_entries WHERE id = ?', (entry_id,))
+            conn.commit()
+
+    def process_external_invoice(self, file_path, filename):
+        ext = filename.split('.')[-1].lower()
+        extracted_rows = []
+
+        if ext in ['xlsx', 'xls', 'csv']:
+            df = pd.read_excel(file_path) if 'xls' in ext else pd.read_csv(file_path)
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                for _, row in df.iterrows():
+                    r_dict = row.to_dict()
+                    ref = str(r_dict.get('رقم_الفاتورة', r_dict.get('Invoice', 'INV-AUTO')))
+                    party = str(r_dict.get('العميل', r_dict.get('المورد', 'عميل/مورد نقدي')))
+                    amount = float(r_dict.get('الإجمالي', r_dict.get('Amount', 1000.0)))
+                    tax = float(r_dict.get('الضريبة', r_dict.get('Tax', amount * 0.15)))
+                    
+                    cursor.execute('''
+                        INSERT INTO pending_imports (doc_date, doc_ref, party_name, doc_type, amount, tax_amount, raw_content)
+                        VALUES (DATE('now'), ?, ?, 'مبيعات/مشتريات', ?, ?, ?)
+                    ''', (ref, party, amount, tax, str(r_dict)))
+                    extracted_rows.append(r_dict)
+                conn.commit()
+            return {"status": "success", "rows_count": len(extracted_rows)}
+
+        return {"status": "error", "message": "صيغة الملف غير مدعومة"}
+
+app = Flask(__name__)
+engine = ERPAccountingEngine()
+
+@app.route('/')
+def index():
+    conn = engine.get_connection()
+    coa = conn.execute('SELECT * FROM coa ORDER BY code ASC').fetchall()
+    entries = conn.execute('''
+        SELECT j.*, SUM(l.debit) as total_debit 
+        FROM journal_entries j 
+        LEFT JOIN journal_lines l ON j.id = l.entry_id 
+        GROUP BY j.id ORDER BY j.id DESC
+    ''').fetchall()
+    pending = conn.execute('SELECT * FROM pending_imports WHERE status = "PENDING"').fetchall()
+
+    total_revenue = conn.execute("SELECT SUM(balance) as val FROM coa WHERE account_type = 'إيراد'").fetchone()['val'] or 0.0
+    total_expenses = conn.execute("SELECT SUM(balance) as val FROM coa WHERE account_type = 'مصروف'").fetchone()['val'] or 0.0
+    net_profit = total_revenue - total_expenses
+    total_cash = conn.execute("SELECT SUM(balance) as val FROM coa WHERE code IN ('111', '112')").fetchone()['val'] or 0.0
+
+    return render_template('index.html', coa=coa, entries=entries, pending=pending, revenue=total_revenue, expenses=total_expenses, profit=net_profit, cash=total_cash)
+
+@app.route('/api/add_entry', methods=['POST'])
+def add_entry():
+    data = request.json
+    try:
+        entry_id = engine.post_journal_entry(
+            entry_date=data['date'],
+            description=data['description'],
+            reference=data.get('reference', 'يدوي'),
+            lines=data['lines']
+        )
+        return jsonify({'status': 'success', 'entry_id': entry_id})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+@app.route('/api/delete_entry/<int:entry_id>', methods=['DELETE'])
+def delete_entry(entry_id):
+    try:
+        engine.delete_journal_entry(entry_id)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+@app.route('/api/convert_pending_to_entry/<int:import_id>', methods=['POST'])
+def convert_pending_to_entry(import_id):
+    conn = engine.get_connection()
+    item = conn.execute('SELECT * FROM pending_imports WHERE id = ?', (import_id,)).fetchone()
+    
+    if not item:
+        return jsonify({'status': 'error', 'message': 'المعاملة غير موجودة'}), 404
+
+    amount = item['amount'] if item['amount'] > 0 else 1000.0
+    tax = item['tax_amount'] if item['tax_amount'] > 0 else (amount * 0.15)
+    net_amount = amount - tax
+
+    lines = [
+        {'account_code': '111', 'debit': amount, 'credit': 0.0},
+        {'account_code': '41', 'debit': 0.0, 'credit': net_amount},
+        {'account_code': '24', 'debit': 0.0, 'credit': tax}
+    ]
+
+    try:
+        entry_id = engine.post_journal_entry(
+            entry_date=item['doc_date'],
+            description=f"ترحيل تلقائي: {item['party_name']} - مرجع {item['doc_ref']}",
+            reference=item['doc_ref'],
+            lines=lines
+        )
+        conn.execute('UPDATE pending_imports SET status = "CONVERTED" WHERE id = ?', (import_id,))
+        conn.commit()
+        return jsonify({'status': 'success', 'entry_id': entry_id})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+@app.route('/api/upload_file', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'status': 'error', 'message': 'لم يتم اختيار ملف'}), 400
+    file = request.files['file']
+    os.makedirs('uploads', exist_ok=True)
+    file_path = os.path.join('uploads', file.filename)
+    file.save(file_path)
+
+    res = engine.process_external_invoice(file_path, file.filename)
+    return jsonify(res)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+    function submitManualEntry() {
     const date = document.getElementById('entryDate').value;
     const desc = document.getElementById('entryDesc').value;
     const ref = document.getElementById('entryRef').value;

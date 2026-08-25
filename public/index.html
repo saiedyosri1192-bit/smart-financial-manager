@@ -180,3 +180,227 @@
     </script>
 </body>
 </html>
+import os
+import sqlite3
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, send_file
+import pandas as pd
+
+# استيراد المكتبات مع الحماية
+try:
+    import pdfplumber
+    HAS_PDF = True
+except ImportError:
+    HAS_PDF = False
+
+try:
+    from PIL import Image
+    import pytesseract
+    HAS_OCR = True
+except ImportError:
+    HAS_OCR = False
+
+DB_NAME = 'financial_manager.db'
+
+class FinancialAnalyticsEngine:
+    def __init__(self, db_name=DB_NAME):
+        self.db_name = db_name
+        self.init_db()
+
+    def get_connection(self):
+        conn = sqlite3.connect(self.db_name)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def init_db(self):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS coa (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    account_type TEXT NOT NULL,
+                    balance REAL DEFAULT 0.0
+                )
+            ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS journal_entries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_date TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    posted_by TEXT NOT NULL,
+                    is_posted INTEGER DEFAULT 0
+                )
+            ''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS journal_lines (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_id INTEGER NOT NULL,
+                    account_code TEXT NOT NULL,
+                    debit REAL DEFAULT 0.0,
+                    credit REAL DEFAULT 0.0,
+                    FOREIGN KEY(entry_id) REFERENCES journal_entries(id),
+                    FOREIGN KEY(account_code) REFERENCES coa(code)
+                )
+            ''')
+
+            default_accounts = [
+                ('110100', 'الصندوق الرئيسي / النقدية', 'ASSET', 50000.0),
+                ('110200', 'بنك الراجحي الرئيسي', 'ASSET', 180000.0),
+                ('110300', 'العملاء والذمم المدينة', 'ASSET', 45000.0),
+                ('110501', 'مخزون الكاميرات والأجهزة', 'ASSET', 65000.0),
+                ('110600', 'ضريبة المدخلات المستردة 15%', 'ASSET', 6000.0),
+                ('210100', 'الموردون والذمم الدائنة', 'LIABILITY', 25000.0),
+                ('210200', 'ضريبة المخرجات المستحقة 15%', 'LIABILITY', 10500.0),
+                ('310000', 'رأس المال المعتمد', 'EQUITY', 200000.0),
+                ('410100', 'إيرادات المبيعات والتركيبات', 'REVENUE', 130000.0),
+                ('510100', 'تكلفة البضاعة المباعة (COGS)', 'COGS', 72000.0),
+                ('610100', 'المصروفات التشغيلية', 'EXPENSE', 5500.0)
+            ]
+            for code, name, acc_type, bal in default_accounts:
+                cursor.execute('INSERT OR IGNORE INTO coa VALUES (?, ?, ?, ?)', (code, name, acc_type, bal))
+
+            conn.commit()
+
+    def get_account_balance(self, code):
+        with self.get_connection() as conn:
+            row = conn.execute('SELECT balance FROM coa WHERE code = ?', (code,)).fetchone()
+            return row['balance'] if row else 0.0
+
+    def generate_full_financial_analysis(self):
+        """تحليل شامل دور المدير المالي ومدير الحسابات"""
+        cash = self.get_account_balance('110100') + self.get_account_balance('110200')
+        receivables = self.get_account_balance('110300')
+        inventory = self.get_account_balance('110501')
+        payables = self.get_account_balance('210100') + self.get_account_balance('210200')
+        
+        revenue = self.get_account_balance('410100')
+        cogs = self.get_account_balance('510100')
+        expenses = self.get_account_balance('610100')
+        
+        net_profit = revenue - cogs - expenses
+        profit_margin = (net_profit / revenue * 100) if revenue > 0 else 0
+        quick_ratio = (cash + receivables) / payables if payables > 0 else 1.0
+        inventory_turnover = (cogs / inventory) if inventory > 0 else 0
+
+        # رؤية المدير المالي (CFO Insights)
+        cfo_insights = []
+        if profit_margin < 15:
+            cfo_insights.append("هامش صافي الربح منخفض (أقل من 15%). يوصى بمراجعة أسعار البيع أو تخفيض تكلفة البضاعة المباعة.")
+        else:
+            cfo_insights.append(f"مستوى الربحية ممتازة وهامش صافي الربح يصل إلى {profit_margin:.1f}%.")
+
+        if quick_ratio < 1.1:
+            cfo_insights.append("تحذير سيولة: نسبة السيولة السريعة ضعيفة. يجب تسريع تحصيل ذمم العملاء أو إرجاء بعض الدفعات للموردين.")
+        else:
+            cfo_insights.append("وضع السيولة النقدية ممتاز وقادر على تغطية كافة الالتزامات قصيرة الأجل.")
+
+        # رؤية مدير الحسابات والتدقيق (Accounting Audit)
+        accounting_audit = []
+        with self.get_connection() as conn:
+            unbalanced = conn.execute('''
+                SELECT entry_id, SUM(debit) as total_debit, SUM(credit) as total_credit
+                FROM journal_lines
+                GROUP BY entry_id
+                HAVING ABS(total_debit - total_credit) > 0.001
+            ''').fetchall()
+            
+            if unbalanced:
+                accounting_audit.append(f"تنبيه رقابي: يوجد عدد {len(unbalanced)} قيد محاسبي غير متوازن يحتاج تعديل فوري!")
+            else:
+                accounting_audit.append("مطابقة محاسبية 100%: جميع القيود المرحّلة متوازنة تماماً.")
+
+        if inventory > (revenue * 0.5):
+            accounting_audit.append("تنبيه مخزوني: حجم المخزون كبير جداً مقارنة بالمبيعات، يوصى بعمل فحص للمخزون بطيء الحركة.")
+
+        return {
+            'metrics': {
+                'revenue': revenue,
+                'net_profit': net_profit,
+                'profit_margin': profit_margin,
+                'quick_ratio': quick_ratio,
+                'inventory_turnover': inventory_turnover
+            },
+            'cfo_insights': cfo_insights,
+            'accounting_audit': accounting_audit
+        }
+
+    def process_imported_file(self, file_path, filename):
+        """معالجة كافة أنواع الملفات (Excel, PDF, Images)"""
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            xls = pd.ExcelFile(file_path)
+            sheets_data = {}
+            for sheet_name in xls.sheet_names:
+                df = pd.read_excel(file_path, sheet_name=sheet_name)
+                sheets_data[sheet_name] = df.to_dict(orient='records')
+            return {'type': 'excel', 'data': sheets_data}
+
+        elif filename.endswith('.pdf'):
+            if not HAS_PDF:
+                return {'type': 'text', 'raw_text': 'مكتبة pdfplumber غير مثبتة.'}
+            text = ""
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    text += (page.extract_text() or "")
+            return {'type': 'pdf', 'raw_text': text}
+
+        elif any(filename.endswith(ext) for ext in ['.png', '.jpg', '.jpeg']):
+            if not HAS_OCR:
+                return {'type': 'ocr', 'raw_text': 'مكتبة Tesseract OCR غير مثبتة.'}
+            image = Image.open(file_path)
+            text = pytesseract.image_to_string(image, lang='ara+eng')
+            return {'type': 'ocr', 'raw_text': text}
+
+        return {'type': 'unknown', 'message': 'صيغة الملف غير مدعومة'}
+
+# ==========================================
+# Flask Routes
+# ==========================================
+app = Flask(__name__)
+engine = FinancialAnalyticsEngine()
+
+@app.route('/')
+def dashboard():
+    conn = engine.get_connection()
+    coa = conn.execute('SELECT * FROM coa').fetchall()
+    journals = conn.execute('''
+        SELECT j.id, j.entry_date, j.description, j.posted_by,
+               SUM(l.debit) as total_amount
+        FROM journal_entries j
+        LEFT JOIN journal_lines l ON j.id = l.entry_id
+        GROUP BY j.id
+        ORDER BY j.id DESC
+    ''').fetchall()
+    return render_template('dashboard.html', coa=coa, journals=journals)
+
+@app.route('/api/analyze', methods=['GET'])
+def analyze():
+    analysis = engine.generate_full_financial_analysis()
+    return jsonify(analysis)
+
+@app.route('/api/import_file', methods=['POST'])
+def import_file():
+    if 'file' not in request.files:
+        return jsonify({'status': 'error', 'message': 'لم يتم إرفاق ملف'}), 400
+    
+    file = request.files['file']
+    filename = file.filename.lower()
+    
+    os.makedirs('uploads', exist_ok=True)
+    file_path = os.path.join('uploads', file.filename)
+    file.save(file_path)
+
+    res = engine.process_imported_file(file_path, filename)
+    return jsonify({'status': 'success', 'result': res})
+
+@app.route('/api/export_excel', methods=['GET'])
+def export_excel():
+    conn = engine.get_connection()
+    df = pd.read_sql_query('SELECT * FROM coa', conn)
+    file_path = 'Financial_Analysis_Report.xlsx'
+    df.to_excel(file_path, index=False)
+    return send_file(file_path, as_attachment=True)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

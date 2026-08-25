@@ -6,8 +6,22 @@ from datetime import datetime
 from flask import Flask, render_template_string, request, jsonify, send_file
 import pandas as pd
 
+# دعم قراءة الصور والملفات المرفقة مع الحماية
+try:
+    import pdfplumber
+    HAS_PDF = True
+except ImportError:
+    HAS_PDF = False
+
+try:
+    from PIL import Image
+    import pytesseract
+    HAS_OCR = True
+except ImportError:
+    HAS_OCR = False
+
 # ==========================================
-# 1. قاعدة البيانات والمحرك المحاسبي والتحليلي
+# 1. محرك الحسابات وقاعدة البيانات والذكاء المحاسبي
 # ==========================================
 DB_NAME = 'financial_manager.db'
 
@@ -25,15 +39,15 @@ class EnterpriseCoreEngine:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # 1. شجرة الحسابات (COA)
+            # 1. شجرة الحسابات
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS coa (
                     code TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
                     account_type TEXT NOT NULL,
-                    parent_code TEXT,
+                    opening_balance REAL DEFAULT 0.0,
                     balance REAL DEFAULT 0.0,
-                    is_active INTEGER DEFAULT 1
+                    badge_type TEXT DEFAULT 'مدين'
                 )
             ''')
 
@@ -42,15 +56,15 @@ class EnterpriseCoreEngine:
                 CREATE TABLE IF NOT EXISTS journal_entries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     entry_date TEXT NOT NULL,
-                    description TEXT NOT NULL,
                     reference TEXT,
                     source_type TEXT DEFAULT 'MANUAL',
-                    posted_by TEXT NOT NULL,
-                    status TEXT DEFAULT 'POSTED'
+                    description TEXT NOT NULL,
+                    posted_by TEXT DEFAULT 'المحاسب',
+                    status TEXT DEFAULT 'معتمد'
                 )
             ''')
 
-            # 3. بنود تفاصيل القيد (مدين/دائن)
+            # 3. تفاصيل القيد (مدين / دائن)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS journal_lines (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,551 +72,524 @@ class EnterpriseCoreEngine:
                     account_code TEXT NOT NULL,
                     debit REAL DEFAULT 0.0,
                     credit REAL DEFAULT 0.0,
-                    project_id TEXT,
-                    cost_center_id TEXT,
-                    FOREIGN KEY(entry_id) REFERENCES journal_entries(id),
+                    FOREIGN KEY(entry_id) REFERENCES journal_entries(id) ON DELETE CASCADE,
                     FOREIGN KEY(account_code) REFERENCES coa(code)
                 )
             ''')
 
-            # 4. مركز جودة البيانات والبيانات الناقصة
+            # 4. المشاريع والتركيبات
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS projects (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    client_name TEXT NOT NULL,
+                    contract_value REAL DEFAULT 0.0,
+                    cost REAL DEFAULT 0.0,
+                    progress INTEGER DEFAULT 0,
+                    status TEXT DEFAULT 'قيد التنفيذ'
+                )
+            ''')
+
+            # 5. الصيانة
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS maintenance (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    maint_date TEXT NOT NULL,
+                    client_name TEXT NOT NULL,
+                    tech_name TEXT NOT NULL,
+                    parts_desc TEXT,
+                    cost REAL DEFAULT 0.0,
+                    revenue REAL DEFAULT 0.0
+                )
+            ''')
+
+            # 6. الفنيون والعهد
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS tech_custody (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tech_name TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    issued_amount REAL DEFAULT 0.0,
+                    expenses REAL DEFAULT 0.0,
+                    materials REAL DEFAULT 0.0,
+                    returns REAL DEFAULT 0.0
+                )
+            ''')
+
+            # 7. مركز جودة البيانات والبيانات الناقصة
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS data_quality_issues (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     source_file TEXT,
                     row_index INTEGER,
-                    issue_type TEXT NOT NULL,
                     issue_description TEXT NOT NULL,
-                    missing_data_fields TEXT NOT NULL,
-                    impact_analysis TEXT NOT NULL,
-                    status TEXT DEFAULT 'PENDING'
+                    impact_analysis TEXT NOT NULL
                 )
             ''')
 
-            # 5. المشاريع والتركيبات
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS projects (
-                    id TEXT PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    client_name TEXT NOT NULL,
-                    contract_value REAL NOT NULL,
-                    estimated_cost REAL NOT NULL,
-                    status TEXT DEFAULT 'IN_PROGRESS'
-                )
-            ''')
-
-            # 6. عهد الفنيين الميدانية
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS tech_custody (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    tech_name TEXT NOT NULL,
-                    issued_amount REAL DEFAULT 0.0,
-                    spent_amount REAL DEFAULT 0.0,
-                    remaining_amount REAL DEFAULT 0.0
-                )
-            ''')
-
-            # 7. سجل التدقيق المحاسبي
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS audit_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TEXT NOT NULL,
-                    user_role TEXT NOT NULL,
-                    action TEXT NOT NULL,
-                    old_value TEXT,
-                    new_value TEXT,
-                    reason TEXT
-                )
-            ''')
-
-            # بناء شجرة الحسابات الافتراضية المعتمدة لمؤسسة الأنظمة الأمنية
+            # إضافة الحسابات الافتراضية المطابقة لبيانات واجهتك
             default_accounts = [
-                ('110100', 'الصندوق الرئيسي / النقدية', 'ASSET', None, 50000.0),
-                ('110200', 'بنك الراجحي الرئيسي', 'ASSET', None, 180000.0),
-                ('110300', 'العملاء والذمم المدينة', 'ASSET', None, 45000.0),
-                ('110501', 'مخزون كاميرات المراقبة والأجهزة', 'ASSET', None, 65000.0),
-                ('110502', 'مخزون قطع الغيار والمستلزمات', 'ASSET', None, 20000.0),
-                ('110600', 'ضريبة المدخلات المستردة (15%)', 'ASSET', None, 6000.0),
-                ('110700', 'عهد الفنيين الميدانية', 'ASSET', None, 5000.0),
-                ('120100', 'سيارات الفنيين ومعدات التركيب', 'ASSET', None, 120000.0),
-                ('120900', 'مجمع إهلاك السيارات والمعدات', 'ASSET', None, -20000.0),
-                ('210100', 'الموردون والذمم الدائنة', 'LIABILITY', None, 25000.0),
-                ('210200', 'ضريبة المخرجات المستحقة (15%)', 'LIABILITY', None, 10500.0),
-                ('210300', 'الرواتب والمنافع المستحقة', 'LIABILITY', None, 12000.0),
-                ('310000', 'رأس المال المعتمد', 'EQUITY', None, 200000.0),
-                ('320000', 'الأرباح المحتجزة', 'EQUITY', None, 180000.0),
-                ('410100', 'إيرادات مبيعات الكاميرات والأجهزة', 'REVENUE', None, 130000.0),
-                ('410200', 'إيرادات مشاريع التركيب والشبكات', 'REVENUE', None, 85000.0),
-                ('410300', 'إيرادات عقود الصيانة المبرمة', 'REVENUE', None, 35000.0),
-                ('510100', 'تكلفة الكاميرات والأجهزة المباعة', 'COGS', None, 72000.0),
-                ('510200', 'تكلفة المواد المستخدمة في التركيب', 'COGS', None, 18000.0),
-                ('610100', 'وقود ومصاريف سيارات الفنيين', 'EXPENSE', None, 5500.0),
-                ('620100', 'رواتب ومنافع الموظفين', 'EXPENSE', None, 25000.0),
-                ('630100', 'مصاريف إيجار ومرافق المؤسسة', 'EXPENSE', None, 15000.0)
+                ('111', 'الصندوق', 'أصل', 50000.0, 42800.0, 'مدين'),
+                ('112', 'البنك', 'أصل', 200000.0, 300000.0, 'مدين'),
+                ('113', 'العملاء', 'أصل', 180000.0, 387500.0, 'مدين'),
+                ('1141', 'مخزون كاميرات', 'أصل', 120000.0, 98600.0, 'مدين'),
+                ('1142', 'مخزون أجهزة تسجيل', 'أصل', 85000.0, 72300.0, 'مدين'),
+                ('1143', 'مخزون هاردات', 'أصل', 45000.0, 38900.0, 'مدين'),
+                ('1144', 'مخزون كابلات', 'أصل', 25000.0, 19200.0, 'مدين'),
+                ('21', 'الموردون', 'التزام', 120000.0, 287400.0, 'دائن'),
+                ('24', 'ضريبة القيمة المضافة - مخرجات', 'التزام', 0.0, 62300.0, 'دائن'),
+                ('31', 'رأس المال', 'حقوق', 800000.0, 800000.0, 'دائن'),
+                ('41', 'مبيعات الكاميرات', 'إيراد', 0.0, 485000.0, 'دائن'),
+                ('43', 'إيرادات التركيب', 'إيراد', 0.0, 195000.0, 'دائن'),
+                ('44', 'إيرادات الصيانة', 'إيراد', 0.0, 125000.0, 'دائن'),
+                ('51', 'تكلفة الكاميرات المباعة', 'مصروف', 0.0, 285000.0, 'مدين'),
+                ('611', 'رواتب', 'مصروف', 0.0, 120000.0, 'مدين'),
+                ('621', 'إيجار', 'مصروف', 0.0, 36000.0, 'مدين'),
+                ('624', 'وقود وصيانة سيارات', 'مصروف', 0.0, 12800.0, 'مدين')
             ]
+            for code, name, acc_type, open_bal, bal, badge in default_accounts:
+                cursor.execute('INSERT OR IGNORE INTO coa VALUES (?, ?, ?, ?, ?, ?)', (code, name, acc_type, open_bal, bal, badge))
 
-            for code, name, acc_type, parent, bal in default_accounts:
-                cursor.execute('''
-                    INSERT OR IGNORE INTO coa (code, name, account_type, parent_code, balance)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (code, name, acc_type, parent, bal))
+            # إضافة المشاريع الافتراضية
+            default_projects = [
+                ('مشروع مجمع التقنية', 'مجمع التقنية للأعمال', 156000.0, 98500.0, 75, 'قيد التنفيذ'),
+                ('مشروع مستشفى النور', 'مستشفى النور التخصصي', 195000.0, 218400.0, 90, 'خاسر ⚠️'),
+                ('مشروع فندق الرياض الدولي', 'فندق الرياض الدولي', 134000.0, 78200.0, 100, 'مكتمل')
+            ]
+            for p_name, c_name, val, cost, prog, stat in default_projects:
+                cursor.execute('INSERT OR IGNORE INTO projects (name, client_name, contract_value, cost, progress, status) VALUES (?, ?, ?, ?, ?, ?)', (p_name, c_name, val, cost, prog, stat))
 
-            cursor.execute('''
-                INSERT OR IGNORE INTO projects (id, title, client_name, contract_value, estimated_cost, status)
-                VALUES ('PRJ-101', 'مشروع تركيب كاميرات شركة JAL', 'شركة JAL International', 85000.0, 50000.0, 'IN_PROGRESS')
-            ''')
-
-            cursor.execute('''
-                INSERT OR IGNORE INTO tech_custody (id, tech_name, issued_amount, spent_amount, remaining_amount)
-                VALUES (1, 'أحمد الفني', 3000.0, 1250.0, 1750.0)
-            ''')
+            # إضافة الفنيين الافتراضيين
+            default_techs = [
+                ('خالد الفني', 'فني تركيب رئيسي', 15000.0, 8450.0, 3200.0, 1500.0),
+                ('سعود الفني', 'فني صيانة', 10000.0, 4200.0, 2800.0, 800.0)
+            ]
+            for t_name, role, iss, exp, mat, ret in default_techs:
+                cursor.execute('INSERT OR IGNORE INTO tech_custody (tech_name, role, issued_amount, expenses, materials, returns) VALUES (?, ?, ?, ?, ?, ?)', (t_name, role, iss, exp, mat, ret))
 
             conn.commit()
 
-    def get_account_balance(self, code):
-        with self.get_connection() as conn:
-            row = conn.execute('SELECT balance FROM coa WHERE code = ?', (code,)).fetchone()
-            return row['balance'] if row else 0.0
+    # محرك ترحيل وإدخال القيود المزدوجة مع التوازن
+    def post_journal_entry(self, entry_date, description, reference, lines):
+        total_debit = sum(float(l['debit']) for l in lines)
+        total_credit = sum(float(l['credit']) for l in lines)
 
-    def post_journal_entry(self, description, lines, reference="MANUAL", posted_by='CFO', source_type='MANUAL'):
-        total_debit = sum(round(float(line.get('debit', 0)), 4) for line in lines)
-        total_credit = sum(round(float(line.get('credit', 0)), 4) for line in lines)
-
-        if abs(total_debit - total_credit) > 0.0001:
-            raise ValueError(f"القيد غير متوازن محاسبياً! إجمالي المدين: {total_debit:,.2f} - إجمالي الدائن: {total_credit:,.2f}")
-
-        date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        if abs(total_debit - total_credit) > 0.001:
+            raise ValueError(f"القيد غير متوازن! إجمالي المدين ({total_debit:,.2f}) لا يساوي الدائن ({total_credit:,.2f})")
 
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO journal_entries (entry_date, description, reference, source_type, posted_by, status)
-                VALUES (?, ?, ?, ?, ?, 'POSTED')
-            ''', (date_str, description, reference, source_type, posted_by))
+                INSERT INTO journal_entries (entry_date, description, reference, posted_by, status)
+                VALUES (?, ?, ?, 'المحاسب', 'معتمد')
+            ''', (entry_date, description, reference))
             
             entry_id = cursor.lastrowid
 
-            for line in lines:
-                debit = float(line.get('debit', 0))
-                credit = float(line.get('credit', 0))
-                code = line['account_code']
-                project_id = line.get('project_id', None)
-
-                cursor.execute('''
-                    INSERT INTO journal_lines (entry_id, account_code, debit, credit, project_id)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (entry_id, code, debit, credit, project_id))
-
+            for l in lines:
+                code = l['account_code']
+                debit = float(l['debit'])
+                credit = float(l['credit'])
+                cursor.execute('INSERT INTO journal_lines (entry_id, account_code, debit, credit) VALUES (?, ?, ?, ?)', (entry_id, code, debit, credit))
+                
+                # تحديث رصيد الحساب تلقائياً في شجرة الحسابات
                 net_change = debit - credit
                 cursor.execute('UPDATE coa SET balance = balance + ? WHERE code = ?', (net_change, code))
-
-            cursor.execute('''
-                INSERT INTO audit_logs (timestamp, user_role, action, old_value, new_value, reason)
-                VALUES (?, ?, 'POST_JOURNAL', NULL, ?, ?)
-            ''', (date_str, posted_by, f"Entry ID: {entry_id}, Total: {total_debit}", description))
 
             conn.commit()
             return entry_id
 
-    def generate_cfo_analytics(self):
-        cash = self.get_account_balance('110100') + self.get_account_balance('110200')
-        receivables = self.get_account_balance('110300')
-        inventory = self.get_account_balance('110501') + self.get_account_balance('110502')
-        payables = self.get_account_balance('210100') + self.get_account_balance('210200')
-        
-        revenue = self.get_account_balance('410100') + self.get_account_balance('410200') + self.get_account_balance('410300')
-        cogs = self.get_account_balance('510100') + self.get_account_balance('510200')
-        expenses = self.get_account_balance('610100') + self.get_account_balance('620100') + self.get_account_balance('630100')
-        
-        gross_profit = revenue - cogs
-        net_profit = gross_profit - expenses
-        
-        net_margin = (net_profit / revenue * 100) if revenue > 0 else 0
-        quick_ratio = ((cash + receivables) / payables) if payables > 0 else 1.0
-
-        cfo_insights = []
-        if net_margin < 12.0:
-            cfo_insights.append(f"تنبيه ربحية: هامش صافي الربح الحكلي ({net_margin:.1f}%) أقل من المأمول (15%). يتطلب الأمر فحص تكلفة أجهزة التركيب والمصروفات التشغيلية.")
-        else:
-            cfo_insights.append(f"أداء الربحية ممتاز: هامش صافي الربح بلغ {net_margin:.1f}%.")
-
-        if quick_ratio < 1.2:
-            cfo_insights.append(f"مخاطر سيولة: نسبة السيولة السريعة ({quick_ratio:.2f}) منخفضة. يوصى بتسريع تحصيل ديون العملاء المتبقية ({receivables:,.2f} SAR).")
-        else:
-            cfo_insights.append(f"السيولة النقدية جيدة وتغطي كافة الالتزامات القصيرة الأجل كلياً.")
-
-        audit_warnings = []
+    # حذف قيد محاسبي وإعادة تصحيح الأرصدة
+    def delete_journal_entry(self, entry_id):
         with self.get_connection() as conn:
-            unbalanced = conn.execute('''
-                SELECT entry_id, SUM(debit) as d, SUM(credit) as c
-                FROM journal_lines GROUP BY entry_id
-                HAVING ABS(d - c) > 0.001
-            ''').fetchall()
+            cursor = conn.cursor()
+            lines = cursor.execute('SELECT account_code, debit, credit FROM journal_lines WHERE entry_id = ?', (entry_id,)).fetchall()
             
-            pending_issues = conn.execute('SELECT COUNT(*) as cnt FROM data_quality_issues WHERE status = "PENDING"').fetchone()['cnt']
+            for line in lines:
+                net_change = line['debit'] - line['credit']
+                cursor.execute('UPDATE coa SET balance = balance - ? WHERE code = ?', (net_change, line['account_code']))
 
-            if unbalanced:
-                audit_warnings.append(f"خطأ محاسبي خطير: تم رصد {len(unbalanced)} قيود غير متوازنة في السجل!")
-            else:
-                audit_warnings.append("التوازن المحاسبي متكامل 100% لجميع القيود المرحّلة.")
+            cursor.execute('DELETE FROM journal_entries WHERE id = ?', (entry_id,))
+            conn.commit()
 
-            if pending_issues > 0:
-                audit_warnings.append(f"يوجد عدد {pending_issues} معاملة متوقفة في مركز جودة البيانات تتطلب تدخل المحاسب.")
-
-        return {
-            'metrics': {
-                'revenue': revenue,
-                'cogs': cogs,
-                'gross_profit': gross_profit,
-                'net_profit': net_profit,
-                'net_margin': net_margin,
-                'cash': cash,
-                'receivables': receivables,
-                'payables': payables,
-                'inventory': inventory,
-                'quick_ratio': quick_ratio
-            },
-            'cfo_insights': cfo_insights,
-            'audit_warnings': audit_warnings
-        }
-
-# ==========================================
-# 2. قالب الواجهة HTML + CSS + JavaScript
-# ==========================================
-HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة العملاق للتحليل المالي والإداري - Enterprise ERP</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
-        * { font-family: 'Tajawal', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-100 p-6">
-    <div class="max-w-7xl mx-auto space-y-6">
+    # محرك استخراج البيانات من الصور والملفات المرفقة (OCR / PDF / Excel)
+    def parse_external_file(self, file_path, filename):
+        ext = filename.split('.')[-1].lower()
+        extracted_text = ""
         
-        <!-- Header Nav -->
-        <div class="bg-slate-900 text-white p-6 rounded-3xl flex justify-between items-center shadow-xl">
-            <div>
-                <h1 class="text-xl font-black flex items-center gap-2">
-                    <i class="fas fa-shield-halved text-blue-500"></i> منظومة العملاق للتحليل المالي والرقابة المحاسبية
-                </h1>
-                <p class="text-xs text-blue-300 mt-1">مؤسسة الحلول الأمنية المرئية | الذكاء الاصطناعي والربط المالي المحترف</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="runCfoAnalysis()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow">
-                    <i class="fas fa-chart-pie ml-1"></i> تشغيل التحليل المالي (CFO)
-                </button>
-            </div>
-        </div>
+        if ext in ['xlsx', 'xls', 'csv']:
+            df = pd.read_excel(file_path) if 'xls' in ext else pd.read_csv(file_path)
+            return {"type": "excel", "rows": len(df), "data": df.to_dict(orient='records')}
 
-        <!-- Metric Cards -->
-        <div class="grid grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                <span class="text-xs font-bold text-slate-400">إجمالي الإيرادات المعتمدة</span>
-                <div id="cardRevenue" class="text-xl font-black text-slate-800 mt-1">0.00 SAR</div>
-            </div>
-            <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                <span class="text-xs font-bold text-slate-400">صافي الربح الحقيقي</span>
-                <div id="cardNetProfit" class="text-xl font-black text-emerald-600 mt-1">0.00 SAR</div>
-            </div>
-            <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                <span class="text-xs font-bold text-slate-400">السيولة النقدية والبنك</span>
-                <div id="cardCash" class="text-xl font-black text-blue-600 mt-1">0.00 SAR</div>
-            </div>
-            <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                <span class="text-xs font-bold text-slate-400">ذمم العملاء المدينة</span>
-                <div id="cardReceivables" class="text-xl font-black text-amber-600 mt-1">0.00 SAR</div>
-            </div>
-        </div>
+        elif ext == 'pdf' and HAS_PDF:
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    extracted_text += (page.extract_text() or "") + "\n"
+            return {"type": "pdf", "text": extracted_text}
 
-        <!-- Import Dropzone & Quality Control -->
-        <div class="grid grid-cols-3 gap-6">
-            <div class="col-span-2 bg-white p-6 rounded-3xl border-2 border-dashed border-blue-300 text-center shadow-sm space-y-3">
-                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="uploadImportFile()">
-                <button onclick="document.getElementById('fileInput').click()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-6 py-3 rounded-xl shadow">
-                    <i class="fas fa-cloud-arrow-up ml-2"></i> استيراد ملف مبيعات/مشتريات من البرنامج الحالي (Excel / CSV)
-                </button>
-                <p id="importStatus" class="text-xs text-slate-500 font-bold">يتم فحص المطابقة والتكرار والضريبة آلياً قبل الاعتماد</p>
-            </div>
+        elif ext in ['png', 'jpg', 'jpeg'] and HAS_OCR:
+            img = Image.open(file_path)
+            extracted_text = pytesseract.image_to_string(img, lang='ara+eng')
+            return {"type": "ocr", "text": extracted_text}
 
-            <!-- Data Quality Center -->
-            <div class="bg-white p-5 rounded-3xl border shadow-sm space-y-2">
-                <h3 class="font-black text-xs text-red-600 flex items-center gap-1">
-                    <i class="fas fa-triangle-exclamation"></i> مركز جودة البيانات والملاحظات
-                </h3>
-                <div class="text-[11px] space-y-2 overflow-y-auto max-h-32">
-                    {% if issues %}
-                        {% for iss in issues %}
-                        <div class="bg-red-50 p-2 rounded-xl border border-red-200 text-red-900">
-                            <strong>ملف: {{ iss['source_file'] }} (سطر {{ iss['row_index'] }})</strong><br>
-                            {{ iss['issue_description'] }} - {{ iss['impact_analysis'] }}
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-slate-400">لا توجد بيانات ناقصة أو متعارضة حالياً.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- CFO Guidance & Audit Panels -->
-        <div class="grid grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
-                <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
-                    <i class="fas fa-user-tie text-amber-500"></i> توجيهات المدير المالي (CFO Insights)
-                </h3>
-                <div id="cfoBox" class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-xs space-y-2 text-amber-900 font-medium">
-                    اضغط على "تشغيل التحليل المالي" لتحديث التحليل التوجيهي.
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
-                <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
-                    <i class="fas fa-clipboard-check text-blue-600"></i> تقرير مدير الحسابات والرقابة
-                </h3>
-                <div id="auditBox" class="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-xs space-y-2 text-blue-900 font-medium">
-                    مطابقة القيود والتوازن المحاسبي مستمرة.
-                </div>
-            </div>
-        </div>
-
-        <!-- Manual Entry Form -->
-        <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-            <h3 class="font-black text-sm text-slate-800"><i class="fas fa-pen-to-square text-indigo-600 ml-1"></i> إدخال وترحيل قيد محاسبي مزدوج</h3>
-            <div class="grid grid-cols-3 gap-4 text-xs">
-                <div><label class="block font-bold mb-1">البيان / الشرح *</label><input type="text" id="entryDesc" class="w-full border p-2 rounded-xl font-bold" placeholder="شرح القيد"></div>
-                <div><label class="block font-bold mb-1">رمز حساب المدين *</label><input type="text" id="debitCode" value="110100" class="w-full border p-2 rounded-xl font-bold"></div>
-                <div><label class="block font-bold mb-1">المبلغ المدين *</label><input type="number" id="debitAmt" class="w-full border p-2 rounded-xl font-bold" placeholder="0.00"></div>
-                <div><label class="block font-bold mb-1">رمز حساب الدائن *</label><input type="text" id="creditCode" value="410100" class="w-full border p-2 rounded-xl font-bold"></div>
-                <div><label class="block font-bold mb-1">المبلغ الدائن *</label><input type="number" id="creditAmt" class="w-full border p-2 rounded-xl font-bold" placeholder="0.00"></div>
-                <div class="flex items-end"><button onclick="submitManualEntry()" class="w-full bg-slate-900 text-white font-bold py-2 rounded-xl text-xs shadow"><i class="fas fa-check ml-1"></i> اعتماد وترحيل القيد</button></div>
-            </div>
-        </div>
-
-        <!-- Accounting Tables (COA & Journals) -->
-        <div class="grid grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
-                <h3 class="font-black text-slate-800 text-sm">شجرة الحسابات المحاسبية (COA)</h3>
-                <div class="overflow-y-auto max-h-64">
-                    <table class="w-full text-xs text-right border-collapse">
-                        <thead>
-                            <tr class="bg-slate-50 border-b font-bold text-slate-600">
-                                <th class="p-2">الرمز</th><th class="p-2">الحساب</th><th class="p-2 text-center">الرصيد المحسوب</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for acc in coa %}
-                            <tr class="border-b">
-                                <td class="p-2 font-mono font-bold text-blue-600">{{ acc['code'] }}</td>
-                                <td class="p-2 font-bold">{{ acc['name'] }}</td>
-                                <td class="p-2 text-center font-black">{{ "{:,.2f}".format(acc['balance']) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-3xl shadow-sm border space-y-3">
-                <h3 class="font-black text-slate-800 text-sm">دفتر اليومية العامة والقيود المرحّلة</h3>
-                <div class="overflow-y-auto max-h-64">
-                    <table class="w-full text-xs text-right border-collapse">
-                        <thead>
-                            <tr class="bg-slate-50 border-b font-bold text-slate-600">
-                                <th class="p-2">القيد</th><th class="p-2">التاريخ</th><th class="p-2">البيان</th><th class="p-2 text-center">المبلغ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for j in journals %}
-                            <tr class="border-b">
-                                <td class="p-2 font-mono font-bold text-indigo-600">JV-{{ j['id'] }}</td>
-                                <td class="p-2 text-[10px]">{{ j['entry_date'] }}</td>
-                                <td class="p-2 font-bold">{{ j['description'] }}</td>
-                                <td class="p-2 text-center font-black text-emerald-600">{{ "{:,.2f}".format(j['total_amount']) if j['total_amount'] else '0.00' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        function runCfoAnalysis() {
-            fetch('/api/analyze')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('cardRevenue').innerText = data.metrics.revenue.toLocaleString() + ' SAR';
-                document.getElementById('cardNetProfit').innerText = data.metrics.net_profit.toLocaleString() + ' SAR';
-                document.getElementById('cardCash').innerText = data.metrics.cash.toLocaleString() + ' SAR';
-                document.getElementById('cardReceivables').innerText = data.metrics.receivables.toLocaleString() + ' SAR';
-
-                let cfoHtml = '<ul class="list-disc pr-4 space-y-1">';
-                data.cfo_insights.forEach(msg => { cfoHtml += `<li>${msg}</li>`; });
-                cfoHtml += '</ul>';
-                document.getElementById('cfoBox').innerHTML = cfoHtml;
-
-                let auditHtml = '<ul class="list-disc pr-4 space-y-1">';
-                data.audit_warnings.forEach(msg => { auditHtml += `<li>${msg}</li>`; });
-                auditHtml += '</ul>';
-                document.getElementById('auditBox').innerHTML = auditHtml;
-            });
-        }
-
-        function submitManualEntry() {
-            const desc = document.getElementById('entryDesc').value;
-            const debitCode = document.getElementById('debitCode').value;
-            const debitAmt = parseFloat(document.getElementById('debitAmt').value) || 0;
-            const creditCode = document.getElementById('creditCode').value;
-            const creditAmt = parseFloat(document.getElementById('creditAmt').value) || 0;
-
-            if(!desc || debitAmt <= 0 || creditAmt <= 0) {
-                alert('يرجى التأكد من كتابة الشرح والمبالغ بشكل صحيح');
-                return;
-            }
-
-            const payload = {
-                description: desc,
-                lines: [
-                    { account_code: debitCode, debit: debitAmt, credit: 0 },
-                    { account_code: creditCode, debit: 0, credit: creditAmt }
-                ]
-            };
-
-            fetch('/api/post_manual_entry', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    location.reload();
-                } else {
-                    alert('خطأ محاسبي: ' + data.message);
-                }
-            });
-        }
-
-        function uploadImportFile() {
-            const input = document.getElementById('fileInput');
-            if (!input.files[0]) return;
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-
-            document.getElementById('importStatus').innerText = "جاري قراءة الملف وتطبيق قواعد المطابقة والتدقيق...";
-            fetch('/api/import_file', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    document.getElementById('importStatus').innerText = data.message;
-                    setTimeout(() => { location.reload(); }, 1500);
-                } else {
-                    document.getElementById('importStatus').innerText = "خطأ: " + data.message;
-                }
-            });
-        }
-
-        window.onload = runCfoAnalysis;
-    </script>
-</body>
-</html>"""
+        return {"type": "unknown", "text": "تم حفظ الملف بنجاح. لا تتطابق مكتبة المعالجة التلقائية حالياً."}
 
 # ==========================================
-# 3. الخادم والمشغل (Flask App Routes)
+# 2. تطبيق خادم FLASK مع الربط بالواجهة
 # ==========================================
 app = Flask(__name__)
 engine = EnterpriseCoreEngine()
 
 @app.route('/')
-def dashboard():
+def index():
     conn = engine.get_connection()
     coa = conn.execute('SELECT * FROM coa ORDER BY code ASC').fetchall()
-    journals = conn.execute('''
-        SELECT j.id, j.entry_date, j.description, j.reference, j.posted_by,
-               SUM(l.debit) as total_amount
-        FROM journal_entries j
-        LEFT JOIN journal_lines l ON j.id = l.entry_id
+    entries = conn.execute('''
+        SELECT j.*, SUM(l.debit) as total_debit 
+        FROM journal_entries j 
+        LEFT JOIN journal_lines l ON j.id = l.entry_id 
         GROUP BY j.id ORDER BY j.id DESC
     ''').fetchall()
-    
-    issues = conn.execute('SELECT * FROM data_quality_issues WHERE status = "PENDING"').fetchall()
     projects = conn.execute('SELECT * FROM projects').fetchall()
-    custody = conn.execute('SELECT * FROM tech_custody').fetchall()
+    maintenance = conn.execute('SELECT * FROM maintenance').fetchall()
+    techs = conn.execute('SELECT * FROM tech_custody').fetchall()
 
-    return render_template_string(HTML_TEMPLATE, coa=coa, journals=journals, issues=issues, projects=projects, custody=custody)
+    # قراءة الكود المصمم واقترانه ببيانات السيرفر
+    with open(__file__, 'r', encoding='utf-8') as f:
+        code_content = f.read()
+    
+    # فصل قالب الـ HTML المدمج في الجزء السفلي
+    html_part = code_content.split('"""HTML_TEMPLATE_MARKER"""')[1]
+    return render_template_string(html_part, coa=coa, entries=entries, projects=projects, maintenance=maintenance, techs=techs)
 
-@app.route('/api/analyze', methods=['GET'])
-def analyze():
-    return jsonify(engine.generate_cfo_analytics())
-
-@app.route('/api/post_manual_entry', methods=['POST'])
-def post_manual_entry():
+# API إضافة قيد محاسبي جديد
+@app.route('/api/add_entry', methods=['POST'])
+def add_entry():
     data = request.json
     try:
         entry_id = engine.post_journal_entry(
+            entry_date=data['date'],
             description=data['description'],
-            lines=data['lines'],
-            reference=data.get('reference', 'MANUAL'),
-            posted_by='ACCOUNTANT',
-            source_type='MANUAL'
+            reference=data.get('reference', 'يدوي'),
+            lines=data['lines']
         )
-        return jsonify({'status': 'success', 'entry_id': entry_id, 'message': 'تم ترحيل القيد بنجاح'})
+        return jsonify({'status': 'success', 'entry_id': entry_id})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
-@app.route('/api/import_file', methods=['POST'])
-def import_file():
+# API حذف قيد محاسبي
+@app.route('/api/delete_entry/<int:entry_id>', methods=['DELETE'])
+def delete_entry(entry_id):
+    try:
+        engine.delete_journal_entry(entry_id)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+# API إضافة حساب في شجرة الحسابات
+@app.route('/api/add_account', methods=['POST'])
+def add_account():
+    data = request.json
+    try:
+        with engine.get_connection() as conn:
+            conn.execute('INSERT INTO coa VALUES (?, ?, ?, ?, ?, ?)', 
+                         (data['code'], data['name'], data['type'], float(data.get('open_bal', 0)), float(data.get('open_bal', 0)), data.get('badge', 'مدين')))
+            conn.commit()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+# API رفع واستيراد الفواتير (Excel / PDF / Images)
+@app.route('/api/upload_file', methods=['POST'])
+def upload_file():
     if 'file' not in request.files:
-        return jsonify({'status': 'error', 'message': 'لم يتم اختيار ملف'}), 400
+        return jsonify({'status': 'error', 'message': 'لم يتم رفع أي ملف'}), 400
     
     file = request.files['file']
-    filename = file.filename.lower()
-    
     os.makedirs('uploads', exist_ok=True)
     file_path = os.path.join('uploads', file.filename)
     file.save(file_path)
 
-    try:
-        if filename.endswith('.xlsx') or filename.endswith('.xls') or filename.endswith('.csv'):
-            df = pd.read_excel(file_path) if not filename.endswith('.csv') else pd.read_csv(file_path)
-            
-            issues_found = 0
-            with engine.get_connection() as conn:
-                cursor = conn.cursor()
-                for idx, row in df.iterrows():
-                    row_dict = row.to_dict()
-                    has_total = any(k in str(row_dict).lower() for k in ['total', 'إجمالي', 'مبلغ'])
-                    has_vat = any(k in str(row_dict).lower() for k in ['vat', 'tax', 'ضريبة'])
-                    
-                    if has_total and not has_vat:
-                        issues_found += 1
-                        cursor.execute('''
-                            INSERT INTO data_quality_issues 
-                            (source_file, row_index, issue_type, issue_description, missing_data_fields, impact_analysis)
-                            VALUES (?, ?, 'MISSING_TAX_TYPE', 'بيانات الضريبة غير محددة بالفاتورة', 'نوع التكليف الضريبي (15% / معفى)', 'عدم إمكانية إعداد إقرار ZATCA القادم')
-                        ''', (file.filename, idx + 1))
-                conn.commit()
-
-            return jsonify({
-                'status': 'success', 
-                'total_rows': len(df),
-                'issues_found': issues_found,
-                'message': 'تم فحص وقراءة الملف بنجاح وإرسال الأخطاء لمركز جودة البيانات.'
-            })
-
-        return jsonify({'status': 'error', 'message': 'صيغة الملف غير مدعومة حالياً'}), 400
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+    res = engine.parse_external_file(file_path, file.filename)
+    return jsonify({'status': 'success', 'result': res})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"=== تم تشغيل نظام العملاق المحاسبي الموحد على المينا {port} ===")
+    print(f"=== تم تشغيل المنظومة المحاسبية الموحدة على Port {port} ===")
     app.run(host='0.0.0.0', port=port, debug=True)
+
+"""HTML_TEMPLATE_MARKER"""
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المدير المالي والمحاسبي الذكي</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#0b1120;color:#e2e8f0;min-height:100vh}
+header{background:linear-gradient(135deg,#1e3a5f,#0b1120);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e293b}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,#3b82f6,#06b6d4);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo h1{margin:0;font-size:18px;font-weight:700;color:#f8fafc}
+.logo p{margin:0;font-size:11px;color:#94a3b8}
+.header-info{display:flex;align-items:center;gap:10px}
+.header-info span{background:#1e293b;padding:6px 12px;border-radius:6px;border:1px solid #334155;font-size:12px}
+.user-avatar{width:36px;height:36px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px}
+nav{background:#1e293b;padding:0 16px;display:flex;gap:2px;border-bottom:1px solid #334155;overflow-x:auto;flex-wrap:wrap}
+nav button{padding:12px 14px;background:transparent;border:none;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all 0.3s}
+nav button:hover{color:#f8fafc}
+nav button.active{color:#3b82f6;border-bottom-color:#3b82f6}
+.section{padding:20px;display:none}
+.section.active{display:block}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:linear-gradient(135deg,#1e293b,#0f172a);padding:18px;border-radius:14px;border:1px solid #334155}
+.kpi-header{display:flex;justify-content:space-between;align-items:start}
+.kpi-header h2{margin:0;font-size:24px;color:#f8fafc}
+.kpi-header p{margin:0 0 6px;color:#94a3b8;font-size:12px}
+.kpi-icon{padding:8px;border-radius:8px;font-size:18px}
+.kpi-trend{margin-top:10px;font-size:12px}
+.kpi-trend .up{color:#22c55e;font-weight:600}
+.kpi-trend .down{color:#ef4444;font-weight:600}
+.kpi-trend .note{color:#64748b;margin-right:6px}
+.dashboard-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.panel{background:#1e293b;padding:20px;border-radius:14px;border:1px solid #334155}
+.panel h3{margin:0 0 14px;color:#f8fafc;font-size:15px}
+.btn{padding:7px 14px;border:none;border-radius:6px;font-size:12px;cursor:pointer;transition:all 0.2s}
+.btn-primary{background:#3b82f6;color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-secondary{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+.accounts-table,.entries-table{background:#1e293b;border-radius:12px;border:1px solid #334155;overflow:hidden;width:100%}
+.accounts-header,.entries-table .header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;padding:12px 16px;background:#0f172a;border-bottom:1px solid #334155;font-size:12px;font-weight:600;color:#94a3b8}
+.account-row,.entry-row{padding:12px 16px;border-bottom:1px solid #334155;font-size:12px}
+.row-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px;align-items:center}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal-overlay.active{display:flex}
+.modal{background:#1e293b;border-radius:16px;border:1px solid #334155;width:90%;max-width:600px;max-height:80vh;overflow-y:auto}
+.modal-header{padding:16px 20px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:20px}
+.modal-footer{padding:16px 20px;border-top:1px solid #334155;display:flex;justify-content:flex-end;gap:8px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;margin-bottom:6px;color:#94a3b8;font-size:12px}
+.form-group input,.form-group select{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:13px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    <div>
+      <h1>المدير المالي والمحاسبي الذكي</h1>
+      <p>مؤسسة الحلول المرئية الأمنية | CCTV & Security Systems</p>
+    </div>
+  </div>
+  <div class="header-info">
+    <span>📅 19 أغسطس 2026</span>
+    <span>📊 أغسطس 2026</span>
+    <button onclick="document.getElementById('importFileInput').click()" class="btn btn-primary">📥 سحب فاتورة (Excel/PDF/Image)</button>
+    <input type="file" id="importFileInput" style="display:none" onchange="uploadExternalFile(this)">
+    <div class="user-avatar">م</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showSection('dash')">📈 لوحة التحكم</button>
+  <button onclick="showSection('acc')">🌳 شجرة الحسابات</button>
+  <button onclick="showSection('jou')">📝 القيود اليومية</button>
+  <button onclick="showSection('proj')">🔧 المشاريع</button>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="dash" class="section active">
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <div><p>إجمالي المبيعات</p><h2>1,245,000 <span style="font-size:12px;color:#94a3b8;">ر.س</span></h2></div>
+        <div class="kpi-icon" style="background:rgba(59,130,246,0.2)">📈</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <div><p>مجمل الربح</p><h2>487,500 <span style="font-size:12px;color:#94a3b8;">ر.س</span></h2></div>
+        <div class="kpi-icon" style="background:rgba(34,197,94,0.2)">💰</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <div><p>صافي الربح</p><h2>198,400 <span style="font-size:12px;color:#94a3b8;">ر.س</span></h2></div>
+        <div class="kpi-icon" style="background:rgba(245,158,11,0.2)">📉</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <div><p>النقدية المتاحة</p><h2>342,800 <span style="font-size:12px;color:#94a3b8;">ر.س</span></h2></div>
+        <div class="kpi-icon" style="background:rgba(6,182,212,0.2)">🏦</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COA SECTION -->
+<div id="acc" class="section">
+  <div style="display:flex;justify-content:space-between;margin-bottom:15px">
+    <h2>🌳 شجرة الحسابات</h2>
+    <button class="btn btn-primary" onclick="openAccountModal()">➕ إضافة حساب جديد</button>
+  </div>
+  <div class="accounts-table">
+    <div class="accounts-header">
+      <span>رمز الحساب</span><span>اسم الحساب</span><span style="text-align:center">النوع</span><span style="text-align:center">الرصيد الافتتاحي</span><span style="text-align:center">الرصيد الحالي</span><span>الطبيعة</span>
+    </div>
+    {% for a in coa %}
+    <div class="account-row">
+      <div class="row-grid">
+        <span style="color:#3b82f6;font-weight:bold">{{ a['code'] }}</span>
+        <span>{{ a['name'] }}</span>
+        <span style="text-align:center">{{ a['account_type'] }}</span>
+        <span style="text-align:center">{{ "{:,.2f}".format(a['opening_balance']) }}</span>
+        <span style="text-align:center;font-weight:bold;color:#22c55e">{{ "{:,.2f}".format(a['balance']) }}</span>
+        <span style="text-align:center">{{ a['badge_type'] }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- JOURNALS SECTION -->
+<div id="jou" class="section">
+  <div style="display:flex;justify-content:space-between;margin-bottom:15px">
+    <h2>📝 دفتر القيود اليومية</h2>
+    <button class="btn btn-primary" onclick="openEntryModal()">➕ إضافة قيد محاسبي</button>
+  </div>
+  <div class="entries-table">
+    <div class="header">
+      <span>رقم القيد</span><span>التاريخ</span><span>المرجع</span><span>البيان</span><span>المبلغ الإجمالي</span><span>إجراءات</span>
+    </div>
+    {% for j in entries %}
+    <div class="entry-row">
+      <div class="row-grid">
+        <span style="color:#3b82f6;font-weight:bold">#JV-{{ j['id'] }}</span>
+        <span>{{ j['entry_date'] }}</span>
+        <span>{{ j['reference'] }}</span>
+        <span>{{ j['description'] }}</span>
+        <span style="text-align:center;color:#22c55e;font-weight:bold">{{ "{:,.2f}".format(j['total_debit']) }}</span>
+        <span style="text-align:center">
+          <button onclick="deleteEntry({{ j['id'] }})" style="background:red;color:white;border:none;padding:3px 8px;border-radius:4px;cursor:pointer">حذف</button>
+        </span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- MODAL OVERLAY -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">إضافة قيد محاسبي</h3>
+      <button onclick="closeModal()" style="background:none;border:none;color:white;cursor:pointer">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="submitModal()">اعتماد وحفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentModalType = '';
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function openAccountModal() {
+  currentModalType = 'account';
+  document.getElementById('modalTitle').innerText = '➕ إضافة حساب جديد';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-group"><label>رمز الحساب</label><input type="text" id="accCode" placeholder="مثال: 115"></div>
+    <div class="form-group"><label>اسم الحساب</label><input type="text" id="accName" placeholder="اسم الحساب"></div>
+    <div class="form-group"><label>نوع الحساب</label><select id="accType"><option>أصل</option><option>التزام</option><option>حقوق</option><option>إيراد</option><option>مصروف</option></select></div>
+    <div class="form-group"><label>الرصيد الافتتاحي</label><input type="number" id="accOpenBal" value="0"></div>
+  `;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function openEntryModal() {
+  currentModalType = 'entry';
+  document.getElementById('modalTitle').innerText = '➕ إضافة قيد محاسبي متوازن';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-group"><label>تاريخ القيد</label><input type="date" id="entryDate" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="form-group"><label>البيان / الشرح</label><input type="text" id="entryDesc" placeholder="شرح عملية القيد"></div>
+    <div class="form-group"><label>المرجع</label><input type="text" id="entryRef" value="فاتورة يدوي"></div>
+    <hr style="margin:10px 0;border-color:#334155">
+    <div class="form-group"><label>رمز حساب المدين (مثال: 111 الصندوق)</label><input type="text" id="debitCode" value="111"></div>
+    <div class="form-group"><label>المبلغ المدين</label><input type="number" id="debitAmt" placeholder="0.00"></div>
+    <div class="form-group"><label>رمز حساب الدائن (مثال: 41 المبيعات)</label><input type="text" id="creditCode" value="41"></div>
+    <div class="form-group"><label>المبلغ الدائن</label><input type="number" id="creditAmt" placeholder="0.00"></div>
+  `;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+function submitModal() {
+  if(currentModalType === 'entry') {
+    const payload = {
+      date: document.getElementById('entryDate').value,
+      description: document.getElementById('entryDesc').value,
+      reference: document.getElementById('entryRef').value,
+      lines: [
+        { account_code: document.getElementById('debitCode').value, debit: parseFloat(document.getElementById('debitAmt').value)||0, credit: 0 },
+        { account_code: document.getElementById('creditCode').value, debit: 0, credit: parseFloat(document.getElementById('creditAmt').value)||0 }
+      ]
+    };
+    fetch('/api/add_entry', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+    .then(r => r.json()).then(res => {
+      if(res.status === 'success') { alert('تم اعتماد القيد وترحيل الأرصدة بنجاح!'); location.reload(); }
+      else { alert('خطأ: ' + res.message); }
+    });
+  } else if(currentModalType === 'account') {
+    const payload = {
+      code: document.getElementById('accCode').value,
+      name: document.getElementById('accName').value,
+      type: document.getElementById('accType').value,
+      open_bal: document.getElementById('accOpenBal').value
+    };
+    fetch('/api/add_account', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+    .then(r => r.json()).then(res => {
+      if(res.status === 'success') { alert('تم إضافة الحساب لشجرة الحسابات بنجاح!'); location.reload(); }
+      else { alert('خطأ: ' + res.message); }
+    });
+  }
+}
+
+function deleteEntry(id) {
+  if(confirm('هل أنت تأكد من إلغاء وحذف هذا القيد؟ سيتم تسوية الأرصدة آلياً.')) {
+    fetch('/api/delete_entry/' + id, { method: 'DELETE' }).then(r => r.json()).then(res => {
+      if(res.status === 'success') location.reload();
+    });
+  }
+}
+
+function uploadExternalFile(input) {
+  if(!input.files[0]) return;
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+  alert('جاري قراءة وتحليل بيانات الفاتورة المرفقة...');
+  fetch('/api/upload_file', { method: 'POST', body: formData })
+  .then(r => r.json()).then(res => {
+    if(res.status === 'success') {
+      alert('تم قراءة الملف بنجاح! نوع الملف: ' + res.result.type);
+    }
+  });
+}
+</script>
+</body>
+</html>

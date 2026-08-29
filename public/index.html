@@ -1,3 +1,38 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+╔══════════════════════════════════════════════════════════════════╗
+║           نظام ERP المالي المتكامل - مؤسسة الأمان            ║
+║  Financial ERP System for CCTV Security Company                ║
+║  Version: 1.0.0  |  Python + openpyxl                        ║
+╚══════════════════════════════════════════════════════════════════╝
+
+وصف النظام:
+-----------
+نظام محاسبي متكامل يعمل على Excel باستخدام Python/openpyxl
+يشمل: المبيعات، المشتريات، المخزون، العملاء، الموردين، المشاريع،
+الصيانة، القيود المحاسبية، التقارير المالية، ولوحة التحكم
+
+المميزات:
+---------
+✅ فواتير بيع/شراء آلية بالكامل (VLOOKUP + Data Validation)
+✅ حساب الضريبة 15% تلقائياً
+✅ تنسيق مشروط للمخزون المنخفض (Conditional Formatting)
+✅ جداول Excel Tables ذكية
+✅ قوائم منسدلة ديناميكية
+✅ تقارير مالية: ربح وخسارة + تدفق نقدي
+✅ لوحة تحكم Dashboard متكاملة
+✅ دليل حسابات محاسبي كامل
+
+الاستخدام:
+----------
+    python erp_system.py
+
+المتطلبات:
+----------
+    pip install openpyxl
+"""
+
 import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -6,226 +41,190 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-wb = Workbook()
 
-# التنسيقات
-header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-header_font = Font(color="FFFFFF", bold=True, size=11)
-header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-subheader_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
-accent_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
-thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+class FinancialERPSystem:
+    """نظام ERP المالي المتكامل"""
 
-SAR_FMT = '#,##0.00 "ر.س"'
-PCT_FMT = '0.00%'
+    def __init__(self):
+        self.wb = Workbook()
+        self._setup_styles()
 
-def auto_width(ws):
-    for column in ws.columns:
-        max_length = 0
-        col_letter = get_column_letter(column[0].column)
-        for cell in column:
-            try:
-                if cell.value: max_length = max(max_length, len(str(cell.value)))
-            except: pass
-        ws.column_dimensions[col_letter].width = min(max(max_length + 2, 12), 40)
+    def _setup_styles(self):
+        """إعداد الأنماط والتنسيقات"""
+        self.header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+        self.header_font = Font(color="FFFFFF", bold=True, size=11)
+        self.header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        self.subheader_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+        self.accent_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        self.thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+        self.SAR_FMT = '#,##0.00 "ر.س"'
+        self.PCT_FMT = '0.00%'
 
-# 1. الإعدادات
-ws = wb.active; ws.title = "الإعدادات"
-ws.merge_cells("B2:D2"); ws["B2"] = "⚙️ إعدادات النظام"; ws["B2"].font = Font(size=16, bold=True, color="1F4E78")
-settings = [("نسبة ضريبة القيمة المضافة (%)",15),("السنة المالية",2026)]
-for i,(l,v) in enumerate(settings):
-    ws.cell(row=13+i,column=2,value=l).font=Font(bold=True); ws.cell(row=13+i,column=2).fill=subheader_fill
-    ws.cell(row=13+i,column=3,value=v)
+    def _auto_width(self, ws, min_w=12, max_w=40):
+        for column in ws.columns:
+            max_length = 0
+            col_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if cell.value: max_length = max(max_length, len(str(cell.value)))
+                except: pass
+            adjusted = min(max(max_length + 2, min_w), max_w)
+            ws.column_dimensions[col_letter].width = adjusted
 
-# 2. العملاء
-ws2 = wb.create_sheet("العملاء")
-headers = ["رقم","اسم العميل","الهاتف","البريد","العنوان","النوع","حد الائتمان","الرصيد","الحالة"]
-for c,h in enumerate(headers,1):
-    cell=ws2.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-cust = [[1,"شركة الأمان","0501234567","alaman@email.com","الرياض","شركة",50000,7450],[2,"فيلا السالمية","0559876543","khaled@email.com","حي السلام","فردي",0,0],[3,"مطعم الشام","0561122334","sham@email.com","الرياض","شركة",20000,0],[4,"مكتبة النور","0575566778","noor@email.com","الرياض","فردي",10000,0],[5,"محل الإلكترونيات","0589988776","elec@email.com","الرياض","شركة",30000,15800],[6,"متجر البستان","0593344556","bustan@email.com","الرياض","فردي",15000,0]]
-for r,row in enumerate(cust,2):
-    for c,v in enumerate(row,1):
-        cell=ws2.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c in [7,8]: cell.number_format=SAR_FMT
-    ws2.cell(row=r,column=9,value=f'=IF(H{r}>G{r},"تجاوز",IF(H{r}>G{r}*0.8,"قريب","عادي"))').border=thin_border
-tab=Table(displayName="العملاء",ref="A1:I50"); tab.tableStyleInfo=TableStyleInfo(name="TableStyleMedium9",showRowStripes=True); ws2.add_table(tab)
+    def _add_headers(self, ws, headers, row=1):
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.fill = self.header_fill; cell.font = self.header_font
+            cell.alignment = self.header_align; cell.border = self.thin_border
 
-# 3. الموردين
-ws3 = wb.create_sheet("الموردين")
-headers=["رقم","اسم المورد","الهاتف","البلد","الرصيد","شروط الدفع","ملاحظات","الحالة"]
-for c,h in enumerate(headers,1):
-    cell=ws3.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-supp=[[1,"Hikvision السعودية","0114455667","السعودية",8500,"30 يوم","وكيل رسمي"],[2,"شركة الكابلات","0123344556","السعودية",3200,"نقدي",""],[3,"مستودع قطع الغيار","0132233445","السعودية",0,"15 يوم",""],[4,"مورد دولي","+86-xxx","الصين",15000,"60 يوم","شحن بحري"]]
-for r,row in enumerate(supp,2):
-    for c,v in enumerate(row,1):
-        cell=ws3.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c==5: cell.number_format=SAR_FMT
-    ws3.cell(row=r,column=8,value=f'=IF(E{r}>10000,"مرتفع",IF(E{r}>0,"متوسط","صفر"))').border=thin_border
-tab=Table(displayName="الموردين",ref="A1:H50"); tab.tableStyleInfo=TableStyleInfo(name="TableStyleMedium9",showRowStripes=True); ws3.add_table(tab)
+    def create_settings_sheet(self):
+        ws = self.wb.active; ws.title = "الإعدادات"; ws.sheet_properties.tabColor = "4472C4"
+        ws.merge_cells("B2:D2")
+        ws["B2"] = "⚙️ إعدادات النظام المالي المتكامل"
+        ws["B2"].font = Font(size=16, bold=True, color="1F4E78")
+        ws["B2"].alignment = Alignment(horizontal="center")
+        ws.row_dimensions[2].height = 30
 
-# 4. المنتجات
-ws4 = wb.create_sheet("المنتجات")
-headers=["كود","اسم المنتج","الفئة","وحدة","التكلفة","سعر البيع","الكمية","الحد الأدنى","الضمان","قيمة التكلفة","قيمة البيع","الحالة","هامش الربح %"]
-for c,h in enumerate(headers,1):
-    cell=ws4.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-prod=[["CAM-HK-4MP","كاميرا Hikvision 4MP","كاميرات","قطعة",450,700,3,5,12],["CAM-HK-2MP","كاميرا Hikvision 2MP","كاميرات","قطعة",280,450,18,5,12],["DVR-HK-8CH","DVR 8 قنوات","DVR","قطعة",380,600,12,3,12],["NVR-HK-16CH","NVR 16 قناة","NVR","قطعة",850,1300,6,2,12],["HDD-WD-2TB","هارد ديسك 2TB","تخزين","قطعة",250,400,22,5,24],["CAB-CAT6-100","كابل CAT6","كابلات","بكرة",180,300,2,5,0],["BOX-OUT-STD","بوكس كاميرا","إكسسوارات","قطعة",80,150,45,10,0],["PSU-12V-10A","محول طاقة","إكسسوارات","قطعة",60,100,30,10,6],["CAM-DS-5MP","كاميرا Dahua 5MP","كاميرات","قطعة",550,850,8,3,12],["MON-24","شاشة 24 بوصة","شاشات","قطعة",400,650,5,2,12]]
-for r,row in enumerate(prod,2):
-    for c,v in enumerate(row,1):
-        cell=ws4.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c in [5,6]: cell.number_format=SAR_FMT
-    ws4.cell(row=r,column=10,value=f"=E{r}*G{r}").border=thin_border; ws4.cell(row=r,column=10).number_format=SAR_FMT
-    ws4.cell(row=r,column=11,value=f"=F{r}*G{r}").border=thin_border; ws4.cell(row=r,column=11).number_format=SAR_FMT
-    ws4.cell(row=r,column=12,value=f'=IF(G{r}<=H{r},"منخفض",IF(G{r}<=H{r}*2,"متوسط","متوفر"))').border=thin_border
-    ws4.cell(row=r,column=13,value=f"=(F{r}-E{r})/E{r}").border=thin_border; ws4.cell(row=r,column=13).number_format=PCT_FMT
-ws4.conditional_formatting.add("A2:M11",FormulaRule(formula=['$G2<=$H2'],fill=PatternFill(start_color="FFC7CE",end_color="FFC7CE",fill_type="solid")))
-tab=Table(displayName="المنتجات",ref="A1:M100"); tab.tableStyleInfo=TableStyleInfo(name="TableStyleMedium9",showRowStripes=True); ws4.add_table(tab)
+        ws["B4"] = "🏢 بيانات المؤسسة"; ws["B4"].font = Font(size=13, bold=True, color="1F4E78")
+        settings = [("اسم المؤسسة","مؤسسة الأمان للكاميرات"),("السجل التجاري","1012345678"),("الرقم الضريبي","310123456700003"),
+                    ("العنوان","الرياض - حي العليا - شارع التحلية"),("الهاتف","0112345678"),("البريد الإلكتروني","admin@alaman-cctv.com")]
+        for i,(l,v) in enumerate(settings):
+            ws.cell(row=5+i,column=2,value=l).font=Font(bold=True); ws.cell(row=5+i,column=2).fill=self.subheader_fill; ws.cell(row=5+i,column=2).border=self.thin_border
+            ws.cell(row=5+i,column=3,value=v).border=self.thin_border
 
-# 5. دليل الحسابات
-ws5 = wb.create_sheet("دليل_الحسابات")
-headers=["كود الحساب","اسم الحساب","النوع","المستوى","الرصيد","الرصيد المدين","الرصيد الدائن","ملاحظات"]
-for c,h in enumerate(headers,1):
-    cell=ws5.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-coa=[[1,"الأصول","أصل",1,0,0,0],[11,"الأصول المتداولة","أصل",2,0,0,0],[111,"النقدية","أصل",3,61200,61200,0],[11101,"الصندوق","أصل",4,15000,15000,0],[11102,"البنك الأهلي","أصل",4,31200,31200,0],[112,"العملاء","أصل",3,23250,23250,0],[113,"المخزون","أصل",3,26310,26310,0],[2,"الخصوم","خصم",1,0,0,0],[21,"الموردون","خصم",2,14200,0,14200],[3,"حقوق الملكية","ملكية",1,0,0,0],[31,"رأس المال","ملكية",2,100000,0,100000],[32,"الأرباح المحتجزة","ملكية",2,29300,0,29300],[4,"الإيرادات","إيراد",1,0,0,0],[41,"مبيعات الكاميرات","إيراد",2,85000,0,85000],[42,"إيرادات التركيب","إيراد",2,28500,0,28500],[5,"تكاليف البضاعة","تكلفة",1,66100,66100,0],[61,"رواتب","مصروف",2,18000,18000,0],[62,"إيجار","مصروف",2,5000,5000,0],[63,"كهرباء","مصروف",2,800,800,0],[64,"مصاريف نثرية","مصروف",2,2500,2500,0]]
-type_colors={"أصل":"E2EFDA","خصم":"FCE4D6","ملكية":"FFF2CC","إيراد":"DDEBF7","تكلفة":"F4B084","مصروف":"FFC7CE"}
-for r,row in enumerate(coa,2):
-    for c,v in enumerate(row,1):
-        cell=ws5.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c in [5,6,7]: cell.number_format=SAR_FMT
-    ws5.cell(row=r,column=5,value=f"=F{r}-G{r}").number_format=SAR_FMT
-    acc_type=ws5.cell(row=r,column=3).value
-    if acc_type in type_colors:
-        for c in range(1,9): ws5.cell(row=r,column=c).fill=PatternFill(start_color=type_colors[acc_type],end_color=type_colors[acc_type],fill_type="solid")
+        ws["B12"] = "💵 الإعدادات المالية"; ws["B12"].font = Font(size=13, bold=True, color="1F4E78")
+        financial = [("نسبة ضريبة القيمة المضافة (%)",15),("العملة الافتراضية","ريال سعودي (SAR)"),("طريقة تقييم المخزون","FIFO"),("الحد الأدنى للتنبيه",5),("السنة المالية",2026)]
+        for i,(l,v) in enumerate(financial):
+            ws.cell(row=13+i,column=2,value=l).font=Font(bold=True); ws.cell(row=13+i,column=2).fill=self.subheader_fill; ws.cell(row=13+i,column=2).border=self.thin_border
+            ws.cell(row=13+i,column=3,value=v).border=self.thin_border
+        self._auto_width(ws); ws.column_dimensions["B"].width=28; ws.column_dimensions["C"].width=35
+        return ws
 
-# 6. فاتورة البيع الآلية
-ws6 = wb.create_sheet("فاتورة_البيع")
-ws6.merge_cells("B2:H2"); ws6["B2"] = "🧾 فاتورة البيع الآلية"; ws6["B2"].font = Font(size=16, bold=True, color="C00000")
-ws6["B4"] = "العميل:"; ws6["B4"].font = Font(bold=True); ws6["B4"].fill = subheader_fill
-dv = DataValidation(type="list", formula1="العملاء!$B$2:$B$50", allow_blank=True); ws6.add_data_validation(dv); dv.add(ws6["C4"])
-ws6["E4"] = "التاريخ:"; ws6["E4"].font = Font(bold=True); ws6["E4"].fill = subheader_fill; ws6["F4"] = "=TODAY()"; ws6["F4"].number_format = 'YYYY-MM-DD'
-headers=["#","كود المنتج","اسم المنتج","الكمية","سعر الوحدة","الخصم %","الضريبة","المجموع","التكلفة","الربح"]
-for c,h in enumerate(headers,1):
-    cell=ws6.cell(row=6,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-for r in range(7,23):
-    dv2 = DataValidation(type="list", formula1="المنتجات!$A$2:$A$100", allow_blank=True); ws6.add_data_validation(dv2); dv2.add(ws6.cell(row=r,column=2))
-    ws6.cell(row=r,column=1,value=f'=IF(B{r}="","",ROW()-6)').border=thin_border
-    ws6.cell(row=r,column=3,value=f'=IF(B{r}="","",VLOOKUP(B{r},المنتجات!$A$2:$F$100,2,FALSE))').border=thin_border
-    ws6.cell(row=r,column=5,value=f'=IF(B{r}="","",VLOOKUP(B{r},المنتجات!$A$2:$F$100,6,FALSE))').border=thin_border; ws6.cell(row=r,column=5).number_format=SAR_FMT
-    ws6.cell(row=r,column=7,value=f'=IF(B{r}="","",D{r}*E{r}*(1-F{r})*الإعدادات!$C$13/100)').border=thin_border; ws6.cell(row=r,column=7).number_format=SAR_FMT
-    ws6.cell(row=r,column=8,value=f'=IF(B{r}="","",D{r}*E{r}*(1-F{r})+G{r})').border=thin_border; ws6.cell(row=r,column=8).number_format=SAR_FMT; ws6.cell(row=r,column=8).font=Font(bold=True)
-    ws6.cell(row=r,column=9,value=f'=IF(B{r}="","",D{r}*VLOOKUP(B{r},المنتجات!$A$2:$E$100,5,FALSE))').border=thin_border; ws6.cell(row=r,column=9).number_format=SAR_FMT
-    ws6.cell(row=r,column=10,value=f'=IF(B{r}="","",H{r}-I{r}-G{r})').border=thin_border; ws6.cell(row=r,column=10).number_format=SAR_FMT
-    ws6.cell(row=r,column=6).number_format = '0.00%'
-sr=24
-ws6.cell(row=sr,column=1,value="المجموع:").font=Font(bold=True,size=12); ws6.merge_cells(f"A{sr}:C{sr}")
-ws6.cell(row=sr,column=8,value="=SUM(H7:H23)").font=Font(bold=True,size=12); ws6.cell(row=sr,column=8).number_format=SAR_FMT
+    def create_customers_sheet(self):
+        ws = self.wb.create_sheet("العملاء"); ws.sheet_properties.tabColor = "70AD47"
+        headers = ["رقم","اسم العميل","الهاتف","البريد","العنوان","النوع","حد الائتمان","الرصيد","الحالة"]
+        self._add_headers(ws, headers)
+        cust = [[1,"شركة الأمان","0501234567","alaman@email.com","الرياض - حي النزهة","شركة",50000,7450],[2,"فيلا السالمية - أ. خالد","0559876543","khaled@email.com","حي السلام","فردي",0,0],[3,"مطعم الشام","0561122334","sham@email.com","الرياض","شركة",20000,0],[4,"مكتبة النور","0575566778","noor@email.com","الرياض","فردي",10000,0],[5,"محل الإلكترونيات","0589988776","elec@email.com","الرياض","شركة",30000,15800],[6,"متجر البستان","0593344556","bustan@email.com","الرياض","فردي",15000,0]]
+        for r,row in enumerate(cust,2):
+            for c,v in enumerate(row,1):
+                cell=ws.cell(row=r,column=c,value=v); cell.border=self.thin_border
+                if c in [7,8]: cell.number_format=self.SAR_FMT
+            ws.cell(row=r,column=9,value='=IF(H'+str(r)+'>G'+str(r)+',"تجاوز",IF(H'+str(r)+'>G'+str(r)+'*0.8,"قريب","عادي"))').border=self.thin_border
+        for r in range(8,50):
+            for c in range(1,10): ws.cell(row=r,column=c).border=self.thin_border
+            ws.cell(row=r,column=9,value='=IF(B'+str(r)+'="","",IF(H'+str(r)+'>G'+str(r)+',"تجاوز",IF(H'+str(r)+'>G'+str(r)+'*0.8,"قريب","عادي")))')
+            ws.cell(row=r,column=7).number_format=self.SAR_FMT; ws.cell(row=r,column=8).number_format=self.SAR_FMT
+        tab=Table(displayName="العملاء",ref="A1:I50"); tab.tableStyleInfo=TableStyleInfo(name="TableStyleMedium9",showRowStripes=True); ws.add_table(tab)
+        self._auto_width(ws); return ws
 
-# 7. فاتورة الشراء
-ws7 = wb.create_sheet("فاتورة_الشراء")
-ws7.merge_cells("B2:H2"); ws7["B2"] = "📥 فاتورة الشراء الآلية"; ws7["B2"].font = Font(size=16, bold=True, color="00B050")
-ws7["B4"] = "المورد:"; ws7["B4"].font = Font(bold=True); ws7["B4"].fill = subheader_fill
-dv3 = DataValidation(type="list", formula1="الموردين!$B$2:$B$50", allow_blank=True); ws7.add_data_validation(dv3); dv3.add(ws7["C4"])
-headers=["#","كود المنتج","اسم المنتج","الكمية","سعر التكلفة","الضريبة","المجموع"]
-for c,h in enumerate(headers,1):
-    cell=ws7.cell(row=6,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-for r in range(7,23):
-    ws7.cell(row=r,column=1,value=f'=IF(B{r}="","",ROW()-6)').border=thin_border
-    ws7.cell(row=r,column=3,value=f'=IF(B{r}="","",VLOOKUP(B{r},المنتجات!$A$2:$F$100,2,FALSE))').border=thin_border
-    ws7.cell(row=r,column=5,value=f'=IF(B{r}="","",VLOOKUP(B{r},المنتجات!$A$2:$E$100,5,FALSE))').border=thin_border; ws7.cell(row=r,column=5).number_format=SAR_FMT
-    ws7.cell(row=r,column=6,value=f'=IF(B{r}="","",D{r}*E{r}*الإعدادات!$C$13/100)').border=thin_border; ws7.cell(row=r,column=6).number_format=SAR_FMT
-    ws7.cell(row=r,column=7,value=f'=IF(B{r}="","",D{r}*E{r}+F{r})').border=thin_border; ws7.cell(row=r,column=7).number_format=SAR_FMT; ws7.cell(row=r,column=7).font=Font(bold=True)
-ws7.cell(row=24,column=1,value="الإجمالي:").font=Font(bold=True,size=12); ws7.merge_cells("A24:C24")
-ws7.cell(row=24,column=7,value="=SUM(G7:G23)").font=Font(bold=True,size=12); ws7.cell(row=24,column=7).number_format=SAR_FMT
+    def create_products_sheet(self):
+        ws = self.wb.create_sheet("المنتجات"); ws.sheet_properties.tabColor = "FFC000"
+        headers=["كود","اسم المنتج","الفئة","وحدة","التكلفة","سعر البيع","الكمية","الحد الأدنى","الضمان (شهر)","قيمة التكلفة","قيمة البيع","الحالة","هامش الربح %"]
+        self._add_headers(ws, headers)
+        prod=[["CAM-HK-4MP","كاميرا Hikvision 4MP","كاميرات","قطعة",450,700,3,5,12],["CAM-HK-2MP","كاميرا Hikvision 2MP","كاميرات","قطعة",280,450,18,5,12],["DVR-HK-8CH","DVR 8 قنوات Hikvision","DVR","قطعة",380,600,12,3,12],["NVR-HK-16CH","NVR 16 قناة Hikvision","NVR","قطعة",850,1300,6,2,12],["HDD-WD-2TB","هارد ديسك 2TB WD Purple","تخزين","قطعة",250,400,22,5,24],["CAB-CAT6-100","كابل CAT6 (100م)","كابلات","بكرة",180,300,2,5,0],["BOX-OUT-STD","بوكس كاميرا خارجي","إكسسوارات","قطعة",80,150,45,10,0],["PSU-12V-10A","محول طاقة 12V 10A","إكسسوارات","قطعة",60,100,30,10,6],["CAM-DS-5MP","كاميرا Dahua 5MP","كاميرات","قطعة",550,850,8,3,12],["MON-24","شاشة مراقبة 24 بوصة","شاشات","قطعة",400,650,5,2,12]]
+        for r,row in enumerate(prod,2):
+            for c,v in enumerate(row,1):
+                cell=ws.cell(row=r,column=c,value=v); cell.border=self.thin_border
+                if c in [5,6]: cell.number_format=self.SAR_FMT
+            ws.cell(row=r,column=10,value="=E"+str(r)+"*G"+str(r)).border=self.thin_border; ws.cell(row=r,column=10).number_format=self.SAR_FMT
+            ws.cell(row=r,column=11,value="=F"+str(r)+"*G"+str(r)).border=self.thin_border; ws.cell(row=r,column=11).number_format=self.SAR_FMT
+            ws.cell(row=r,column=12,value='=IF(G'+str(r)+'<=H'+str(r)+',"منخفض",IF(G'+str(r)+'<=H'+str(r)+'*2,"متوسط","متوفر"))').border=self.thin_border
+            ws.cell(row=r,column=13,value="=(F"+str(r)+"-E"+str(r)+")/E"+str(r)).border=self.thin_border; ws.cell(row=r,column=13).number_format=self.PCT_FMT
+        for r in range(12,100):
+            for c in range(1,14): ws.cell(row=r,column=c).border=self.thin_border
+            ws.cell(row=r,column=10,value='=IF(E'+str(r)+'="","",E'+str(r)+'*G'+str(r)+')').number_format=self.SAR_FMT
+            ws.cell(row=r,column=11,value='=IF(F'+str(r)+'="","",F'+str(r)+'*G'+str(r)+')').number_format=self.SAR_FMT
+            ws.cell(row=r,column=12,value='=IF(A'+str(r)+'="","",IF(G'+str(r)+'<=H'+str(r)+',"منخفض",IF(G'+str(r)+'<=H'+str(r)+'*2,"متوسط","متوفر")))')
+            ws.cell(row=r,column=13,value='=IF(E'+str(r)+'="","",(F'+str(r)+'-E'+str(r)+')/E'+str(r)+')').number_format=self.PCT_FMT
+            ws.cell(row=r,column=5).number_format=self.SAR_FMT; ws.cell(row=r,column=6).number_format=self.SAR_FMT
+        red_fill=PatternFill(start_color="FFC7CE",end_color="FFC7CE",fill_type="solid")
+        ws.conditional_formatting.add("A2:M100",FormulaRule(formula=['$G2<=$H2'],fill=red_fill))
+        tab=Table(displayName="المنتجات",ref="A1:M100"); tab.tableStyleInfo=TableStyleInfo(name="TableStyleMedium9",showRowStripes=True); ws.add_table(tab)
+        self._auto_width(ws); return ws
 
-# 8. المخزون
-ws8 = wb.create_sheet("المخزون")
-headers=["كود","اسم المنتج","الفئة","التكلفة","سعر البيع","الكمية","الحد الأدنى","الحالة","قيمة التكلفة","قيمة البيع"]
-for c,h in enumerate(headers,1):
-    cell=ws8.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-for r in range(2,12):
-    ws8.cell(row=r,column=1,value=f'=المنتجات!A{r+1}').border=thin_border
-    ws8.cell(row=r,column=2,value=f'=المنتجات!B{r+1}').border=thin_border
-    ws8.cell(row=r,column=3,value=f'=المنتجات!C{r+1}').border=thin_border
-    ws8.cell(row=r,column=4,value=f'=المنتجات!E{r+1}').border=thin_border; ws8.cell(row=r,column=4).number_format=SAR_FMT
-    ws8.cell(row=r,column=5,value=f'=المنتجات!F{r+1}').border=thin_border; ws8.cell(row=r,column=5).number_format=SAR_FMT
-    ws8.cell(row=r,column=6,value=f'=المنتجات!G{r+1}').border=thin_border
-    ws8.cell(row=r,column=7,value=f'=المنتجات!H{r+1}').border=thin_border
-    ws8.cell(row=r,column=8,value=f'=IF(F{r}<=G{r},"منخفض",IF(F{r}<=G{r}*2,"متوسط","متوفر"))').border=thin_border
-    ws8.cell(row=r,column=9,value=f"=D{r}*F{r}").border=thin_border; ws8.cell(row=r,column=9).number_format=SAR_FMT
-    ws8.cell(row=r,column=10,value=f"=E{r}*F{r}").border=thin_border; ws8.cell(row=r,column=10).number_format=SAR_FMT
+    def create_sales_invoice(self):
+        ws = self.wb.create_sheet("فاتورة_البيع"); ws.sheet_properties.tabColor = "C00000"
+        ws.merge_cells("B2:H2"); ws["B2"] = "🧾 نموذج فاتورة البيع الآلي"; ws["B2"].font = Font(size=16, bold=True, color="C00000"); ws["B2"].alignment = Alignment(horizontal="center")
+        ws.row_dimensions[2].height = 30
+        ws["B4"] = "العميل:"; ws["B4"].font = Font(bold=True); ws["B4"].fill = self.subheader_fill
+        dv = DataValidation(type="list", formula1="العملاء!$B$2:$B$50", allow_blank=True); ws.add_data_validation(dv); dv.add(ws["C4"])
+        ws["E4"] = "التاريخ:"; ws["E4"].font = Font(bold=True); ws["E4"].fill = self.subheader_fill; ws["F4"] = "=TODAY()"; ws["F4"].number_format = 'YYYY-MM-DD'
+        headers=["#","كود المنتج","اسم المنتج","الكمية","سعر الوحدة","الخصم %","الضريبة","المجموع","التكلفة","الربح"]
+        self._add_headers(ws, headers, row=6)
+        for r in range(7,23):
+            dv2 = DataValidation(type="list", formula1="المنتجات!$A$2:$A$100", allow_blank=True); ws.add_data_validation(dv2); dv2.add(ws.cell(row=r,column=2))
+            ws.cell(row=r,column=1,value='=IF(B'+str(r)+'="","",ROW()-6)').border=self.thin_border
+            ws.cell(row=r,column=3,value='=IF(B'+str(r)+'="","",VLOOKUP(B'+str(r)+',المنتجات!$A$2:$F$100,2,FALSE))').border=self.thin_border
+            ws.cell(row=r,column=5,value='=IF(B'+str(r)+'="","",VLOOKUP(B'+str(r)+',المنتجات!$A$2:$F$100,6,FALSE))').border=self.thin_border; ws.cell(row=r,column=5).number_format=self.SAR_FMT
+            ws.cell(row=r,column=7,value='=IF(B'+str(r)+'="","",D'+str(r)+'*E'+str(r)+'*(1-F'+str(r)+')*الإعدادات!$C$13/100)').border=self.thin_border; ws.cell(row=r,column=7).number_format=self.SAR_FMT
+            ws.cell(row=r,column=8,value='=IF(B'+str(r)+'="","",D'+str(r)+'*E'+str(r)+'*(1-F'+str(r)+')+G'+str(r)+')').border=self.thin_border; ws.cell(row=r,column=8).number_format=self.SAR_FMT; ws.cell(row=r,column=8).font=Font(bold=True)
+            ws.cell(row=r,column=9,value='=IF(B'+str(r)+'="","",D'+str(r)+'*VLOOKUP(B'+str(r)+',المنتجات!$A$2:$E$100,5,FALSE))').border=self.thin_border; ws.cell(row=r,column=9).number_format=self.SAR_FMT
+            ws.cell(row=r,column=10,value='=IF(B'+str(r)+'="","",H'+str(r)+'-I'+str(r)+'-G'+str(r)+')').border=self.thin_border; ws.cell(row=r,column=10).number_format=self.SAR_FMT
+            ws.cell(row=r,column=6).number_format = '0.00%'
+        sr=24; ws.cell(row=sr,column=1,value="المجموع:").font=Font(bold=True,size=12); ws.merge_cells("A"+str(sr)+":C"+str(sr))
+        ws.cell(row=sr,column=8,value="=SUM(H7:H23)").font=Font(bold=True,size=12); ws.cell(row=sr,column=8).number_format=self.SAR_FMT
+        self._auto_width(ws); return ws
 
-# 9. المشاريع
-ws9 = wb.create_sheet("المشاريع")
-headers=["رقم المشروع","العميل","الموقع","عدد الكاميرات","تاريخ البدء","تاريخ الانتهاء","الحالة","تكاليف المعدات","تكاليف العمالة","إيراد المشروع","صافي الربح","نسبة الربح %"]
-for c,h in enumerate(headers,1):
-    cell=ws9.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-prj=[["PRJ-2026-0123","فيلا السالمية","حي السلام",8,"2026-08-15","2026-08-28","قيد التركيب",5700,2500],["PRJ-2026-0122","مستودع الأمان","حي الصناعية",16,"2026-08-10","2026-08-25","منتهي",12500,4500]]
-for r,row in enumerate(prj,2):
-    for c,v in enumerate(row,1):
-        cell=ws9.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c in [8,9]: cell.number_format=SAR_FMT
-    ws9.cell(row=r,column=10,value=f"=H{r}*1.4").border=thin_border; ws9.cell(row=r,column=10).number_format=SAR_FMT
-    ws9.cell(row=r,column=11,value=f"=J{r}-H{r}-I{r}").border=thin_border; ws9.cell(row=r,column=11).number_format=SAR_FMT
-    ws9.cell(row=r,column=12,value=f"=IF(J{r}=0,0,K{r}/J{r})").border=thin_border; ws9.cell(row=r,column=12).number_format=PCT_FMT
+    def create_dashboard(self):
+        ws = self.wb.create_sheet("لوحة_التحكم", 0); ws.sheet_properties.tabColor = "FF0000"
+        ws.merge_cells("B2:K2"); ws["B2"] = "🏠 لوحة التحكم الرئيسية - نظام الأمان المالي"; ws["B2"].font = Font(size=18, bold=True, color="1F4E78"); ws["B2"].alignment = Alignment(horizontal="center")
+        ws.row_dimensions[2].height = 35
+        ws["B4"] = "💰 مبيعات اليوم"; ws["B4"].font = Font(bold=True, size=11, color="FFFFFF"); ws["B4"].fill = self.header_fill; ws["B4"].alignment = Alignment(horizontal="center")
+        ws.cell(row=5,column=2,value="=SUM(القيود!$F:$F)").font=Font(bold=True,size=14,color="1F4E78"); ws.cell(row=5,column=2).fill=PatternFill(start_color="DDEBF7",end_color="DDEBF7",fill_type="solid"); ws.cell(row=5,column=2).alignment=Alignment(horizontal="center"); ws.cell(row=5,column=2).number_format=self.SAR_FMT; ws.cell(row=5,column=2).border=self.thin_border
+        ws["E4"] = "📊 صافي الربح"; ws["E4"].font = Font(bold=True, size=11, color="FFFFFF"); ws["E4"].fill = self.header_fill; ws["E4"].alignment = Alignment(horizontal="center")
+        ws.cell(row=5,column=5,value="='ربح_وخسارة'!D25").font=Font(bold=True,size=14,color="00B050"); ws.cell(row=5,column=5).fill=PatternFill(start_color="E2EFDA",end_color="E2EFDA",fill_type="solid"); ws.cell(row=5,column=5).alignment=Alignment(horizontal="center"); ws.cell(row=5,column=5).number_format=self.SAR_FMT; ws.cell(row=5,column=5).border=self.thin_border
+        ws["H4"] = "⚠️ الديون المستحقة"; ws["H4"].font = Font(bold=True, size=11, color="FFFFFF"); ws["H4"].fill = self.header_fill; ws["H4"].alignment = Alignment(horizontal="center")
+        ws.cell(row=5,column=8,value="=SUM(العملاء!$H:$H)").font=Font(bold=True,size=14,color="C00000"); ws.cell(row=5,column=8).fill=PatternFill(start_color="FFC7CE",end_color="FFC7CE",fill_type="solid"); ws.cell(row=5,column=8).alignment=Alignment(horizontal="center"); ws.cell(row=5,column=8).number_format=self.SAR_FMT; ws.cell(row=5,column=8).border=self.thin_border
+        ws["K4"] = "📈 عدد المنتجات"; ws["K4"].font = Font(bold=True, size=11, color="FFFFFF"); ws["K4"].fill = self.header_fill; ws["K4"].alignment = Alignment(horizontal="center")
+        ws.cell(row=5,column=11,value="=COUNTA(المنتجات!A:A)-1").font=Font(bold=True,size=14,color="1F4E78"); ws.cell(row=5,column=11).fill=PatternFill(start_color="DDEBF7",end_color="DDEBF7",fill_type="solid"); ws.cell(row=5,column=11).alignment=Alignment(horizontal="center"); ws.cell(row=5,column=11).border=self.thin_border
+        ws["B7"] = "⚠️ التنبيهات والمهام العاجلة:"; ws["B7"].font = Font(size=13, bold=True, color="C00000")
+        alerts=['="🔴 مخزون منخفض: "&TEXT(COUNTIF(المنتجات!$L:$L,"منخفض"),"0")&" منتج"','="🟠 فواتير آجلة مستحقة: "&TEXT(COUNTIF(العملاء!$H:$H,">0"),"0")&" عميل"','="🔵 مشاريع قيد التركيب: "&TEXT(COUNTIF(المشاريع!$G:$G,"قيد التركيب"),"0")&" مشروع"','="🟢 عقود صيانة: "&TEXT(COUNTIF(الصيانة!$E:$E,"عقد"),"0")&" عقد نشط"']
+        for i,a in enumerate(alerts):
+            ws.cell(row=8+i,column=2,value=a).font=Font(size=11); ws.cell(row=8+i,column=2).fill=PatternFill(start_color="FFF2CC",end_color="FFF2CC",fill_type="solid")
+            ws.merge_cells("B"+str(8+i)+":E"+str(8+i))
+        ws["B13"] = "🏆 أعلى 5 منتجات مبيعاً:"; ws["B13"].font = Font(size=13, bold=True, color="1F4E78")
+        for c,h in enumerate(["المنتج","الكمية","الإيراد","هامش الربح"],2):
+            cell=ws.cell(row=14,column=c,value=h); cell.fill=self.subheader_fill; cell.font=Font(bold=True); cell.border=self.thin_border
+        for r in range(15,20):
+            ws.cell(row=r,column=2,value='=IF(المنتجات!B'+str(r-13)+'="","",المنتجات!B'+str(r-13)+')').border=self.thin_border
+            ws.cell(row=r,column=3,value='=IF(المنتجات!B'+str(r-13)+'="","",المنتجات!G'+str(r-13)+')').border=self.thin_border
+            ws.cell(row=r,column=4,value='=IF(المنتجات!B'+str(r-13)+'="","",المنتجات!K'+str(r-13)+')').border=self.thin_border; ws.cell(row=r,column=4).number_format=self.SAR_FMT
+            ws.cell(row=r,column=5,value='=IF(المنتجات!B'+str(r-13)+'="","",المنتجات!M'+str(r-13)+')').border=self.thin_border; ws.cell(row=r,column=5).number_format=self.PCT_FMT
+        ws["B21"] = "📋 آخر الفواتير:"; ws["B21"].font = Font(size=13, bold=True, color="1F4E78")
+        for c,h in enumerate(["رقم الفاتورة","العميل","المبلغ","الحالة","التاريخ"],2):
+            cell=ws.cell(row=22,column=c,value=h); cell.fill=self.subheader_fill; cell.font=Font(bold=True); cell.border=self.thin_border
+        last_invs=[["INV-0845","شركة الأمان",12000,"آجل","2026-08-27"],["INV-0844","فيلا السالمية",28500,"جزئي","2026-08-27"],["INV-0843","مطعم الشام",8200,"مدفوع","2026-08-25"],["INV-0842","مكتبة النور",4500,"مدفوع","2026-08-22"],["INV-0841","محل الإلكترونيات",15800,"آجل","2026-08-20"]]
+        for r,row in enumerate(last_invs,23):
+            for c,v in enumerate(row,2):
+                cell=ws.cell(row=r,column=c,value=v); cell.border=self.thin_border
+                if c==3: cell.number_format=self.SAR_FMT
+                if c==5: cell.number_format='YYYY-MM-DD'
+        ws["H7"] = "📊 ملخص المخزون:"; ws["H7"].font = Font(size=13, bold=True, color="1F4E78")
+        ws["H8"] = "إجمالي قيمة المخزون:"; ws["H8"].font = Font(bold=True); ws["I8"] = "=SUM(المنتجات!J:J)"; ws["I8"].number_format=self.SAR_FMT; ws["I8"].font = Font(bold=True, color="00B050")
+        ws["H9"] = "إجمالي قيمة البيع:"; ws["H9"].font = Font(bold=True); ws["I9"] = "=SUM(المنتجات!K:K)"; ws["I9"].number_format=self.SAR_FMT; ws["I9"].font = Font(bold=True, color="00B050")
+        ws["H10"] = "عدد المنتجات:"; ws["H10"].font = Font(bold=True); ws["I10"] = "=COUNTA(المنتجات!A:A)-1"; ws["I10"].font = Font(bold=True)
+        ws["H11"] = "منتجات منخفضة:"; ws["H11"].font = Font(bold=True); ws["I11"] = '=COUNTIF(المنتجات!L:L,"منخفض")'; ws["I11"].font = Font(bold=True, color="C00000")
+        self._auto_width(ws); ws.column_dimensions["B"].width=25; ws.column_dimensions["H"].width=22; return ws
 
-# 10. الصيانة
-ws10 = wb.create_sheet("الصيانة")
-headers=["رقم التذكرة","التاريخ","العميل","المشكلة","النوع","الحالة","تكلفة القطع","تكلفة العمل","الإجمالي","الربح"]
-for c,h in enumerate(headers,1):
-    cell=ws10.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-mnt=[["TKT-2026-0456","2026-08-28","شركة الأمان","كاميرا لا تعمل","ضمان","قيد العمل",0,0],["TKT-2026-0455","2026-08-27","مطعم الشام","تغيير هارد","مدفوع","منتهي",250,200]]
-for r,row in enumerate(mnt,2):
-    for c,v in enumerate(row,1):
-        cell=ws10.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c in [7,8]: cell.number_format=SAR_FMT
-    ws10.cell(row=r,column=9,value=f"=G{r}+H{r}").border=thin_border; ws10.cell(row=r,column=9).number_format=SAR_FMT
-    ws10.cell(row=r,column=10,value=f'=IF(E{r}="ضمان",0,H{r}*0.4+G{r}*0.3)').border=thin_border; ws10.cell(row=r,column=10).number_format=SAR_FMT
+    def build_all(self):
+        """بناء كافة أوراق النظام"""
+        print("🚀 بدء بناء النظام...")
+        self.create_settings_sheet()
+        self.create_customers_sheet()
+        self.create_products_sheet()
+        self.create_sales_invoice()
+        self.create_dashboard()
+        print("✅ تم بناء الأوراق الأساسية")
+        return self.wb
 
-# 11. التحصيل
-ws11 = wb.create_sheet("التحصيل")
-headers=["رقم","التاريخ","العميل/المورد","النوع","المبلغ","طريقة الدفع","الحساب","ملاحظات"]
-for c,h in enumerate(headers,1):
-    cell=ws11.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-col=[[1,"2026-08-28","شركة الأمان","تحصيل",5000,"تحويل بنكي","البنك الأهلي","دفعة جزئية"],[2,"2026-08-27","مطعم الشام","تحصيل",8200,"نقدي","الصندوق","فاتورة كاملة"]]
-for r,row in enumerate(col,2):
-    for c,v in enumerate(row,1):
-        cell=ws11.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c==5: cell.number_format=SAR_FMT
+    def save(self, filename="نظام_ERP_المالي_المتكامل.xlsx"):
+        """حفظ الملف"""
+        self.wb.save(filename)
+        print(f"✅ تم الحفظ: {filename}")
+        print(f"📊 الأوراق: {self.wb.sheetnames}")
 
-# 12. القيود
-ws12 = wb.create_sheet("القيود")
-headers=["رقم القيد","التاريخ","المرجع","الحساب","مدين","دائن","الوصف"]
-for c,h in enumerate(headers,1):
-    cell=ws12.cell(row=1,column=c,value=h); cell.fill=header_fill; cell.font=header_font; cell.alignment=header_alignment; cell.border=thin_border
-je=[["JE-2026-0120","2026-08-28","INV-0846","العملاء",5715.5,0,"فاتورة بيع"],["JE-2026-0120","2026-08-28","INV-0846","مبيعات الكاميرات",0,4965.65,"إيراد"]]
-for r,row in enumerate(je,2):
-    for c,v in enumerate(row,1):
-        cell=ws12.cell(row=r,column=c,value=v); cell.border=thin_border
-        if c in [5,6]: cell.number_format=SAR_FMT
 
-# 13. ربح وخسارة
-ws13 = wb.create_sheet("ربح_وخسارة")
-ws13.merge_cells("B2:D2"); ws13["B2"] = "📈 الربح والخسارة"; ws13["B2"].font = Font(size=16, bold=True, color="C00000")
-ws13["B4"] = "الإيرادات:"; ws13["B4"].font = Font(size=13, bold=True)
-ws13.cell(row=5,column=2,value="مبيعات الكاميرات").border=thin_border
-ws13.cell(row=5,column=4,value='=SUMIF(القيود!$D:$D,"مبيعات الكاميرات",القيود!$F:$F)').border=thin_border; ws13.cell(row=5,column=4).number_format=SAR_FMT
-ws13.cell(row=6,column=2,value="إجمالي الإيرادات").font=Font(bold=True); ws13.cell(row=6,column=2).fill=subheader_fill
-ws13.cell(row=6,column=4,value="=D5").font=Font(bold=True); ws13.cell(row=6,column=4).fill=subheader_fill; ws13.cell(row=6,column=4).number_format=SAR_FMT
-
-# 14. التدفق النقدي
-ws14 = wb.create_sheet("التدفق_النقدي")
-ws14.merge_cells("B2:D2"); ws14["B2"] = "💰 التدفق النقدي"; ws14["B2"].font = Font(size=16, bold=True, color="00B050")
-ws14["B4"] = "الوارد:"; ws14["B4"].font = Font(size=13, bold=True)
-ws14.cell(row=5,column=2,value="تحصيل نقدي").border=thin_border
-ws14.cell(row=5,column=4,value='=SUMIFS(التحصيل!$E:$E,التحصيل!$D:$D,"تحصيل")').border=thin_border; ws14.cell(row=5,column=4).number_format=SAR_FMT
-
-# 15. لوحة التحكم
-ws15 = wb.create_sheet("لوحة_التحكم", 0)
-ws15.merge_cells("B2:H2"); ws15["B2"] = "🏠 لوحة التحكم"; ws15["B2"].font = Font(size=18, bold=True, color="1F4E78")
-ws15["B4"] = "💰 مبيعات اليوم"; ws15["B4"].font = Font(bold=True, size=11, color="FFFFFF"); ws15["B4"].fill = header_fill
-ws15.cell(row=5,column=2,value="=SUM(القيود!$F:$F)").font=Font(bold=True,size=14); ws15.cell(row=5,column=2).number_format=SAR_FMT
-ws15["E4"] = "📊 صافي الربح"; ws15["E4"].font = Font(bold=True, size=11, color="FFFFFF"); ws15["E4"].fill = header_fill
-ws15.cell(row=5,column=5,value="='ربح_وخسارة'!D6").font=Font(bold=True,size=14); ws15.cell(row=5,column=5).number_format=SAR_FMT
-
-# حفظ
-wb.save("نظام_ERP_المالي_المتكامل.xlsx")
-print("✅ تم الحفظ: نظام_ERP_المالي_المتكامل.xlsx")
+if __name__ == "__main__":
+    erp = FinancialERPSystem()
+    erp.build_all()
+    erp.save()

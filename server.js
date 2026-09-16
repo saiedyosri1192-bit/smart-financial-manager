@@ -1,162 +1,166 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const path = require('path');
+name: Contract
 
-const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || 'smart_financial_manager_secret_key_2026';
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
 
-app.use(express.json());
-app.use(cors());
-app.use(express.static(path.join(__dirname, 'public')));
+permissions:
+  contents: read
 
-// ذاكرة تخزين مؤقتة للأنظمة التي لا تمتلك قاعدة بيانات سحابية مفعلة
-let inMemoryUsers = [];
-let inMemoryTransactions = [];
+jobs:
+  derivation:
+    name: Reviewed artifact derivation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-let isPg = false;
-let pool = null;
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-if (process.env.DATABASE_URL) {
-    try {
-        const { Pool } = require('pg');
-        pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
-            ssl: { rejectUnauthorized: false }
-        });
-        isPg = true;
-        
-        pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(100) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS transactions (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                type VARCHAR(20) NOT NULL,
-                description TEXT NOT NULL,
-                amount NUMERIC(12, 2) NOT NULL,
-                category VARCHAR(100) NOT NULL,
-                date DATE NOT NULL
-            );
-        `).then(() => console.log('PostgreSQL Connected')).catch(err => console.error('PG Init Error:', err));
-    } catch (e) {
-        console.log('Running in Memory mode');
-    }
-}
+      - run: npm ci
 
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'يرجى تسجيل الدخول أولاً' });
+      # After dependency installation this runs offline, without a database,
+      # credentials, an environment, or shared write authority.
+      - name: Recompile and compare reviewed artifacts
+        run: npm run check:generated-artifacts
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ message: 'جلسة غير صالحة' });
-        req.user = user;
-        next();
-    });
-}
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      # `check` diffs against origin/main, so it needs more than a shallow clone.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-app.post('/api/register', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ message: 'يرجى ملء كافة الحقول' });
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        if (isPg) {
-            await pool.query('INSERT INTO users (username, password) VALUES ($1, $2)', [username, hashedPassword]);
-        } else {
-            if (inMemoryUsers.find(u => u.username === username)) {
-                return res.status(400).json({ message: 'اسم المستخدم مسجل مسبقاً' });
-            }
-            inMemoryUsers.push({ id: Date.now(), username, password: hashedPassword });
-        }
-        res.json({ message: 'تم إنشاء الحساب بنجاح' });
-    } catch (err) {
-        res.status(400).json({ message: 'اسم المستخدم مسجل مسبقاً أو حدث خطأ' });
-    }
-});
+      - run: npm ci
 
-app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-    try {
-        let user;
-        if (isPg) {
-            const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-            user = result.rows[0];
-        } else {
-            user = inMemoryUsers.find(u => u.username === username);
-        }
+      # Every step below is credential-free and makes no product, provider, or
+      # database calls. Package-consumer tests may resolve public npm metadata.
+      - name: Validate contract YAML
+        run: npx tsx src/cli.ts contract validate .
 
-        if (!user) return res.status(400).json({ message: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+      - name: Evaluate semantic impact
+        run: npx tsx src/cli.ts check . --base origin/main
 
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) return res.status(400).json({ message: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+      - name: Credential-free test suites
+        run: npm test
 
-        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ token, username: user.username });
-    } catch (err) {
-        res.status(500).json({ message: 'خطأ في الخادم' });
-    }
-});
+      - name: Workspace onboarding tests
+        run: npm run test:tieline
 
-app.get('/api/transactions', authenticateToken, async (req, res) => {
-    try {
-        if (isPg) {
-            const result = await pool.query(
-                "SELECT id, type, description, amount::float, category, TO_CHAR(date, 'YYYY-MM-DD') as date FROM transactions WHERE user_id = $1 ORDER BY date DESC",
-                [req.user.id]
-            );
-            res.json(result.rows);
-        } else {
-            const userTx = inMemoryTransactions.filter(t => t.user_id === req.user.id);
-            res.json(userTx);
-        }
-    } catch (err) {
-        res.status(500).json({ message: 'خطأ في جلب البيانات' });
-    }
-});
+  parser-package:
+    name: Installed parser package (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Offline installed-package smoke and deterministic facts
+        run: |
+          set -o pipefail
+          npm run test:parser-package | tee parser-package.log
+          grep '"fact_digest"' parser-package.log | tail -1 > parser-facts-${{ matrix.node }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parser-facts-${{ matrix.node }}
+          path: parser-facts-${{ matrix.node }}.json
 
-app.post('/api/transactions', authenticateToken, async (req, res) => {
-    const { type, description, amount, category, date } = req.body;
-    try {
-        let newId = Date.now();
-        if (isPg) {
-            const result = await pool.query(
-                'INSERT INTO transactions (user_id, type, description, amount, category, date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-                [req.user.id, type, description, amount, category, date]
-            );
-            newId = result.rows[0].id;
-        } else {
-            inMemoryTransactions.unshift({ id: newId, user_id: req.user.id, type, description, amount: parseFloat(amount), category, date });
-        }
-        res.json({ id: newId, type, description, amount, category, date });
-    } catch (err) {
-        res.status(500).json({ message: 'خطأ في حفظ العملية' });
-    }
-});
+  parser-fact-parity:
+    name: Node 20/24 fact parity
+    needs: parser-package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: parser-facts-*
+          merge-multiple: true
+      - name: Compare installed-package fact digests
+        run: >-
+          node -e 'const fs=require("fs"); const files=fs.readdirSync(".").filter(f=>f.startsWith("parser-facts-")); const digests=files.map(f=>JSON.parse(fs.readFileSync(f,"utf8")).fact_digest); if(files.length!==2||new Set(digests).size!==1) throw new Error(`Node fact mismatch: ${JSON.stringify({files,digests})}`)'
 
-app.delete('/api/transactions/:id', authenticateToken, async (req, res) => {
-    try {
-        if (isPg) {
-            await pool.query('DELETE FROM transactions WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
-        } else {
-            inMemoryTransactions = inMemoryTransactions.filter(t => !(t.id == req.params.id && t.user_id === req.user.id));
-        }
-        res.json({ message: 'تم الحذف بنجاح' });
-    } catch (err) {
-        res.status(500).json({ message: 'خطأ في الحذف' });
-    }
-});
+  database:
+    name: Relational topology integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tieline_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tieline_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/tieline_test
+      DATABASE_URL_ADMIN: postgres://postgres:postgres@localhost:5432/tieline_test
+      TIELINE_INTEGRATION_TEST_DATABASE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:release:database
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+  release-budgets:
+    name: Pinned Node 20 release budgets
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tieline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tieline"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/tieline
+      DATABASE_URL_ADMIN: postgres://postgres:postgres@localhost:5432/tieline
+      TIELINE_ENFORCE_RELEASE_BUDGETS: "1"
+      TIELINE_TOPOLOGY_BENCHMARK_SCALE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Installed-package parser budgets
+        run: npm run benchmark:parser-package
+      - name: Full topology fixture budgets
+        run: npm run benchmark:code-topology
+      - name: Topology artifact reader budgets
+        run: npm run benchmark:code-topology-artifact
